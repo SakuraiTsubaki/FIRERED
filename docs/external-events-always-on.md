@@ -33,10 +33,16 @@ Remove dependence on external distribution hardware, Wonder Cards, e-Reader data
 
 The ticket itself is the entitlement.
 
+Ticket distribution is moved in-game: a dedicated Mystery Gift deliveryman is permanently placed in Pallet Town from the beginning of the game. Talking to him gives any missing event tickets. No external Mystery Gift data is required.
+
 - `ITEM_AURORA_TICKET` alone enables Birth Island in the Vermilion ferry destination logic.
 - `ITEM_MYSTIC_TICKET` alone enables Navel Rock in the Vermilion ferry destination logic.
 - Do not require `FLAG_ENABLE_SHIP_BIRTH_ISLAND` or `FLAG_ENABLE_SHIP_NAVEL_ROCK`.
 - Local ticket distribution only needs to give the corresponding Key Item.
+- The Pallet Town deliveryman is visible from the start and never disappears.
+- If the player already owns one ticket, only the missing ticket is given.
+- If both tickets are already owned, no duplicate is given.
+- If a ticket is later absent from the bag, talking to the NPC again restores the missing ticket.
 - `FLAG_RECEIVED_AURORA_TICKET` and `FLAG_RECEIVED_MYSTIC_TICKET` are not required for access.
 - `FLAG_SHOWN_AURORA_TICKET` and `FLAG_SHOWN_MYSTIC_TICKET` may remain because they only control the one-time ferry explanation.
 - Legendary encounter completion flags remain unchanged.
