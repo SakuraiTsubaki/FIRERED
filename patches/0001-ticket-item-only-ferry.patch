@@ -1,0 +1,25 @@
+From: FIRERED project
+Subject: [PATCH 1/2] Make event-island ferry access depend on ticket items only
+
+Reference target: pret/pokefirered
+
+The retail scripts require both an enable flag and a Key Item.
+For the always-on event build, possession of the ticket is the single source
+of truth. Normal Seagallop story progression is unchanged.
+
+--- a/data/maps/VermilionCity/scripts.inc
++++ b/data/maps/VermilionCity/scripts.inc
+@@
+ VermilionCity_EventScript_CheckHasMysticTicket::
+-	goto_if_unset FLAG_ENABLE_SHIP_NAVEL_ROCK, EventScript_SetResultFalse
+ 	checkitem ITEM_MYSTIC_TICKET
+ 	goto_if_eq VAR_RESULT, FALSE, EventScript_SetResultFalse
+ 	goto EventScript_SetResultTrue
+ 	end
+ 
+ VermilionCity_EventScript_CheckHasAuroraTicket::
+-	goto_if_unset FLAG_ENABLE_SHIP_BIRTH_ISLAND, EventScript_SetResultFalse
+ 	checkitem ITEM_AURORA_TICKET
+ 	goto_if_eq VAR_RESULT, FALSE, EventScript_SetResultFalse
+ 	goto EventScript_SetResultTrue
+ 	end
