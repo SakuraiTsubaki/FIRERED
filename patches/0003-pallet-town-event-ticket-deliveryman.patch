@@ -1,0 +1,86 @@
+From: FIRERED project
+Subject: [PATCH 3/3] Add permanent event-ticket deliveryman to Pallet Town
+
+Reference target: pret/pokefirered
+
+This creates an always-available in-game replacement for limited external
+distribution. The NPC exists from the beginning of the game and gives only
+tickets missing from the player's Key Items pocket.
+
+Ferry usability remains controlled by normal Seagallop story progression.
+PATCH 1/3 makes possession of the ticket item the only event-island
+entitlement check.
+
+--- a/data/maps/PalletTown/map.json
++++ b/data/maps/PalletTown/map.json
+@@
+   "object_events": [
++    {
++      "local_id": "LOCALID_PALLET_EVENT_DELIVERYMAN",
++      "type": "object",
++      "graphics_id": "OBJ_EVENT_GFX_MG_DELIVERYMAN",
++      "x": 8,
++      "y": 11,
++      "elevation": 3,
++      "movement_type": "MOVEMENT_TYPE_FACE_RIGHT",
++      "movement_range_x": 0,
++      "movement_range_y": 0,
++      "trainer_type": "TRAINER_TYPE_NONE",
++      "trainer_sight_or_berry_tree_id": "0",
++      "script": "PalletTown_EventScript_EventTicketDeliveryman",
++      "flag": "0"
++    },
+     {
+       "local_id": "LOCALID_PALLET_SIGN_LADY",
+
+--- a/data/maps/PalletTown/scripts.inc
++++ b/data/maps/PalletTown/scripts.inc
+@@
+ .equ SIGN_LADY_READY, VAR_TEMP_2
++
++PalletTown_EventScript_EventTicketDeliveryman::
++	lock
++	faceplayer
++	checkitem ITEM_AURORA_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_GiveAuroraTicket
++	checkitem ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_GiveMysticTicket
++	msgbox PalletTown_Text_EventDeliverymanAlreadyDelivered
++	release
++	end
++
++PalletTown_EventScript_GiveAuroraTicket::
++	checkitemspace ITEM_AURORA_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	giveitem ITEM_AURORA_TICKET
++	checkitem ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_EventTicketsDelivered
++
++PalletTown_EventScript_GiveMysticTicket::
++	checkitemspace ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	giveitem ITEM_MYSTIC_TICKET
++
++PalletTown_EventScript_EventTicketsDelivered::
++	msgbox PalletTown_Text_EventDeliverymanDelivered
++	release
++	end
++
++PalletTown_EventScript_EventTicketBagFull::
++	msgbox PalletTown_Text_EventDeliverymanBagFull
++	release
++	end
++
++PalletTown_Text_EventDeliverymanDelivered:
++	.string "I have two special tickets for you.\\p"
++	.string "Keep them safe. When the proper ferry\\n"
++	.string "route opens, they'll take you somewhere\\l"
++	.string "very unusual.$"
++
++PalletTown_Text_EventDeliverymanAlreadyDelivered:
++	.string "I've already delivered both special\\n"
++	.string "tickets addressed to you.$"
++
++PalletTown_Text_EventDeliverymanBagFull:
++	.string "Your KEY ITEMS POCKET has no room.\\p"
++	.string "Make some space, then speak to me again.$"
