@@ -33,16 +33,22 @@ Remove dependence on external distribution hardware, Wonder Cards, e-Reader data
 
 The ticket itself is the entitlement.
 
-Ticket distribution is moved in-game: a dedicated Mystery Gift deliveryman is permanently placed in Pallet Town from the beginning of the game. Talking to him gives any missing event tickets. No external Mystery Gift data is required.
+Ticket distribution is moved in-game: a dedicated Mystery Gift deliveryman is permanently placed in Pallet Town from the beginning of the game. No external Mystery Gift data is required.
+
+Talking to the NPC opens a four-choice menu:
+
+1. Aurora Ticket
+2. Mystic Ticket
+3. Both
+4. Cancel
 
 - `ITEM_AURORA_TICKET` alone enables Birth Island in the Vermilion ferry destination logic.
 - `ITEM_MYSTIC_TICKET` alone enables Navel Rock in the Vermilion ferry destination logic.
 - Do not require `FLAG_ENABLE_SHIP_BIRTH_ISLAND` or `FLAG_ENABLE_SHIP_NAVEL_ROCK`.
-- Local ticket distribution only needs to give the corresponding Key Item.
 - The Pallet Town deliveryman is visible from the start and never disappears.
-- If the player already owns one ticket, only the missing ticket is given.
-- If both tickets are already owned, no duplicate is given.
-- If a ticket is later absent from the bag, talking to the NPC again restores the missing ticket.
+- Choosing a ticket already owned does not create a duplicate.
+- Choosing **Both** gives only the missing ticket(s).
+- If a ticket is later absent from the bag, the player can choose it again.
 - `FLAG_RECEIVED_AURORA_TICKET` and `FLAG_RECEIVED_MYSTIC_TICKET` are not required for access.
 - `FLAG_SHOWN_AURORA_TICKET` and `FLAG_SHOWN_MYSTIC_TICKET` may remain because they only control the one-time ferry explanation.
 - Legendary encounter completion flags remain unchanged.
@@ -51,15 +57,13 @@ This makes old and new saves behave consistently: possession of the Key Item is 
 
 ### Aurora Ticket / Birth Island / Deoxys
 
-- Aurora Ticket can be obtained locally.
-- The local giver only needs to give `ITEM_AURORA_TICKET`.
+- Aurora Ticket can be selected from the Pallet Town deliveryman.
 - Birth Island becomes a destination whenever the player has the Aurora Ticket and has reached the normal Seagallop ferry progression.
 - Deoxys remains a one-time encounter according to the original battle/event state.
 
 ### Mystic Ticket / Navel Rock / Lugia / Ho-Oh
 
-- Mystic Ticket can be obtained locally.
-- The local giver only needs to give `ITEM_MYSTIC_TICKET`.
+- Mystic Ticket can be selected from the Pallet Town deliveryman.
 - Navel Rock becomes a destination whenever the player has the Mystic Ticket and has reached the normal Seagallop ferry progression.
 - Lugia and Ho-Oh retain their original one-time encounter flags.
 
