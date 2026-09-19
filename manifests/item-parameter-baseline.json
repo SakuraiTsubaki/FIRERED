@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "canonical_source": {
+    "repository": "pret/pokeemerald",
+    "role": "canonical-generation-iii-item-parameters"
+  },
+  "target": {
+    "repository": "SakuraiTsubaki/FIRERED",
+    "game": "Pokemon FireRed"
+  },
+  "item_id_space": {
+    "first": 0,
+    "last": 376,
+    "count": 377,
+    "fire_red_existing_last": 374,
+    "additions": [
+      {
+        "id": 375,
+        "item": "ITEM_MAGMA_EMBLEM"
+      },
+      {
+        "id": 376,
+        "item": "ITEM_OLD_SEA_MAP"
+      }
+    ]
+  },
+  "canonical_fields": [
+    "itemId",
+    "name",
+    "price",
+    "holdEffect",
+    "holdEffectParam",
+    "description",
+    "importance",
+    "registrability",
+    "pocket",
+    "type",
+    "battleUsage",
+    "secondaryId",
+    "icon",
+    "iconPalette"
+  ],
+  "runtime_handler_policy": {
+    "baseline": "emerald-semantics",
+    "compatibility": "preserve-fire-red-native-handler-when-emerald-handler-is-disabled-only-because-frlg-system-is-absent",
+    "fields": [
+      "fieldUseFunc",
+      "battleUseFunc"
+    ]
+  },
+  "event_menu_order": [
+    "ITEM_EON_TICKET",
+    "ITEM_MYSTIC_TICKET",
+    "ITEM_AURORA_TICKET",
+    "ITEM_OLD_SEA_MAP"
+  ],
+  "reserved_non_menu_item": "ITEM_MAGMA_EMBLEM",
+  "save_compatibility": {
+    "remap_existing_ids_0_to_374": false
+  }
+}
