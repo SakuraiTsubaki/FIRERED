@@ -1,19 +1,22 @@
 From: FIRERED project
-Subject: [PATCH 3/3] Add selectable event-ticket deliveryman to Pallet Town
+Subject: [PATCH 3/3] Add four-event-ticket deliveryman menu to Pallet Town
 
 Reference target: pret/pokefirered
 
 This creates an always-available in-game replacement for limited external
 distribution. The NPC exists from the beginning of the game and presents a
-four-choice menu:
+four event-item choices:
 
-  1. AURORATICKET
-  2. MYSTICTICKET
-  3. BOTH
-  4. CANCEL
+  1. EON TICKET
+  2. AURORATICKET
+  3. MYSTICTICKET
+  4. OLD SEA MAP
 
-Individual choices never duplicate a ticket already in the Key Items pocket.
-BOTH gives only the missing ticket(s).
+B cancels the menu.
+
+FireRed already defines ITEM_EON_TICKET, ITEM_AURORA_TICKET, and
+ITEM_MYSTIC_TICKET. OLD SEA MAP requires the companion Emerald
+Faraway Island / Old Sea Map port before its handler can be final.
 
 Ferry usability remains controlled by normal Seagallop story progression.
 PATCH 1/3 makes possession of the ticket item the only event-island
@@ -38,15 +41,16 @@ entitlement check.
      { gOtherText_Exit }
  };
 +
++static const u8 sText_EonTicketChoice[] = _("EON TICKET");
 +static const u8 sText_AuroraTicketChoice[] = _("AURORATICKET");
 +static const u8 sText_MysticTicketChoice[] = _("MYSTICTICKET");
-+static const u8 sText_BothTicketsChoice[] = _("BOTH");
++static const u8 sText_OldSeaMapChoice[] = _("OLD SEA MAP");
 +
 +static const struct MenuAction sMultichoiceList_EventTickets[] = {
++    { sText_EonTicketChoice },
 +    { sText_AuroraTicketChoice },
 +    { sText_MysticTicketChoice },
-+    { sText_BothTicketsChoice },
-+    { gOtherText_Exit }
++    { sText_OldSeaMapChoice }
 +};
 @@
      [MULTICHOICE_JOIN_OR_LEAD]                               = MULTICHOICE(sMultichoiceList_JoinOrLead),
@@ -86,13 +90,23 @@ entitlement check.
 +	faceplayer
 +	message PalletTown_Text_EventDeliverymanChoose
 +	waitmessage
-+	multichoice 12, 5, MULTICHOICE_EVENT_TICKETS, FALSE
++	multichoice 10, 4, MULTICHOICE_EVENT_TICKETS, FALSE
 +	switch VAR_RESULT
-+	case 0, PalletTown_EventScript_ChooseAuroraTicket
-+	case 1, PalletTown_EventScript_ChooseMysticTicket
-+	case 2, PalletTown_EventScript_ChooseBothTickets
-+	case 3, PalletTown_EventScript_EventTicketCancel
++	case 0, PalletTown_EventScript_ChooseEonTicket
++	case 1, PalletTown_EventScript_ChooseAuroraTicket
++	case 2, PalletTown_EventScript_ChooseMysticTicket
++	case 3, PalletTown_EventScript_ChooseOldSeaMap
 +	case 127, PalletTown_EventScript_EventTicketCancel
++	end
++
++PalletTown_EventScript_ChooseEonTicket::
++	checkitem ITEM_EON_TICKET, 1
++	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_AlreadyHasEonTicket
++	checkitemspace ITEM_EON_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	giveitem ITEM_EON_TICKET
++	msgbox PalletTown_Text_EventDeliverymanEonDelivered
++	release
 +	end
 +
 +PalletTown_EventScript_ChooseAuroraTicket::
@@ -115,24 +129,16 @@ entitlement check.
 +	release
 +	end
 +
-+PalletTown_EventScript_ChooseBothTickets::
-+	checkitem ITEM_AURORA_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_ChooseBothNeedAurora
-+	checkitem ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_ChooseMysticTicket
-+	goto PalletTown_EventScript_AlreadyHasBothTickets
++@ Final implementation is supplied by the Old Sea Map / Faraway Island port.
++@ Do not manufacture a fake FireRed item ID here.
++PalletTown_EventScript_ChooseOldSeaMap::
++	msgbox PalletTown_Text_EventDeliverymanOldSeaMapNeedsPort
++	release
 +	end
 +
-+PalletTown_EventScript_ChooseBothNeedAurora::
-+	checkitemspace ITEM_AURORA_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
-+	giveitem ITEM_AURORA_TICKET
-+	checkitem ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_BothTicketsDelivered
-+	checkitemspace ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketPartial
-+	giveitem ITEM_MYSTIC_TICKET
-+	goto PalletTown_EventScript_BothTicketsDelivered
++PalletTown_EventScript_AlreadyHasEonTicket::
++	msgbox PalletTown_Text_EventDeliverymanAlreadyHasEon
++	release
 +	end
 +
 +PalletTown_EventScript_AlreadyHasAuroraTicket::
@@ -142,21 +148,6 @@ entitlement check.
 +
 +PalletTown_EventScript_AlreadyHasMysticTicket::
 +	msgbox PalletTown_Text_EventDeliverymanAlreadyHasMystic
-+	release
-+	end
-+
-+PalletTown_EventScript_AlreadyHasBothTickets::
-+	msgbox PalletTown_Text_EventDeliverymanAlreadyHasBoth
-+	release
-+	end
-+
-+PalletTown_EventScript_BothTicketsDelivered::
-+	msgbox PalletTown_Text_EventDeliverymanBothDelivered
-+	release
-+	end
-+
-+PalletTown_EventScript_EventTicketPartial::
-+	msgbox PalletTown_Text_EventDeliverymanPartial
 +	release
 +	end
 +
@@ -170,33 +161,30 @@ entitlement check.
 +	end
 +
 +PalletTown_Text_EventDeliverymanChoose:
-+	.string "I have special event tickets for you.\\p"
++	.string "I have four special event items.\\p"
 +	.string "Which would you like?$"
 +
++PalletTown_Text_EventDeliverymanEonDelivered:
++	.string "Here is your EON TICKET.$"
++
 +PalletTown_Text_EventDeliverymanAuroraDelivered:
-+	.string "Here is your AURORATICKET.\\p"
-+	.string "Keep it until the proper ferry route opens.$"
++	.string "Here is your AURORATICKET.$"
 +
 +PalletTown_Text_EventDeliverymanMysticDelivered:
-+	.string "Here is your MYSTICTICKET.\\p"
-+	.string "Keep it until the proper ferry route opens.$"
++	.string "Here is your MYSTICTICKET.$"
 +
-+PalletTown_Text_EventDeliverymanBothDelivered:
-+	.string "Here are both special tickets.\\p"
-+	.string "Keep them until the proper ferry routes open.$"
++PalletTown_Text_EventDeliverymanOldSeaMapNeedsPort:
++	.string "The OLD SEA MAP delivery requires\\n"
++	.string "the FARAWAY ISLAND event data.$"
++
++PalletTown_Text_EventDeliverymanAlreadyHasEon:
++	.string "You already have an EON TICKET.$"
 +
 +PalletTown_Text_EventDeliverymanAlreadyHasAurora:
 +	.string "You already have an AURORATICKET.$"
 +
 +PalletTown_Text_EventDeliverymanAlreadyHasMystic:
 +	.string "You already have a MYSTICTICKET.$"
-+
-+PalletTown_Text_EventDeliverymanAlreadyHasBoth:
-+	.string "You already have both special tickets.$"
-+
-+PalletTown_Text_EventDeliverymanPartial:
-+	.string "I delivered what would fit.\\p"
-+	.string "Make some space, then speak to me again.$"
 +
 +PalletTown_Text_EventDeliverymanBagFull:
 +	.string "Your KEY ITEMS POCKET has no room.\\p"
