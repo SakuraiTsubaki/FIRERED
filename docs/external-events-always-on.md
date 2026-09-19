@@ -38,8 +38,8 @@ Ticket distribution is moved in-game: a dedicated Mystery Gift deliveryman is pe
 Talking to the NPC opens exactly four event-item choices:
 
 1. Eon Ticket
-2. Aurora Ticket
-3. Mystic Ticket
+2. Mystic Ticket
+3. Aurora Ticket
 4. Old Sea Map
 
 Pressing B cancels the menu.
