@@ -1,15 +1,58 @@
 From: FIRERED project
-Subject: [PATCH 3/3] Add permanent event-ticket deliveryman to Pallet Town
+Subject: [PATCH 3/3] Add selectable event-ticket deliveryman to Pallet Town
 
 Reference target: pret/pokefirered
 
 This creates an always-available in-game replacement for limited external
-distribution. The NPC exists from the beginning of the game and gives only
-tickets missing from the player's Key Items pocket.
+distribution. The NPC exists from the beginning of the game and presents a
+four-choice menu:
+
+  1. AURORATICKET
+  2. MYSTICTICKET
+  3. BOTH
+  4. CANCEL
+
+Individual choices never duplicate a ticket already in the Key Items pocket.
+BOTH gives only the missing ticket(s).
 
 Ferry usability remains controlled by normal Seagallop story progression.
 PATCH 1/3 makes possession of the ticket item the only event-island
 entitlement check.
+
+--- a/include/constants/menu.h
++++ b/include/constants/menu.h
+@@
+ #define MULTICHOICE_TRAINER_TOWER_MODE                         64
++#define MULTICHOICE_EVENT_TICKETS                              65
+ 
+ #define MULTICHOICE_NONE                                      255
+
+--- a/src/script_menu.c
++++ b/src/script_menu.c
+@@
+ static const struct MenuAction sMultichoiceList_TrainerTowerMode[] = {
+     { gOtherText_Single },
+     { gOtherText_Double },
+     { gOtherText_Knockout },
+     { gOtherText_Mixed },
+     { gOtherText_Exit }
+ };
++
++static const u8 sText_AuroraTicketChoice[] = _("AURORATICKET");
++static const u8 sText_MysticTicketChoice[] = _("MYSTICTICKET");
++static const u8 sText_BothTicketsChoice[] = _("BOTH");
++
++static const struct MenuAction sMultichoiceList_EventTickets[] = {
++    { sText_AuroraTicketChoice },
++    { sText_MysticTicketChoice },
++    { sText_BothTicketsChoice },
++    { gOtherText_Exit }
++};
+@@
+     [MULTICHOICE_JOIN_OR_LEAD]                               = MULTICHOICE(sMultichoiceList_JoinOrLead),
+     [MULTICHOICE_TRAINER_TOWER_MODE]                         = MULTICHOICE(sMultichoiceList_TrainerTowerMode),
++    [MULTICHOICE_EVENT_TICKETS]                              = MULTICHOICE(sMultichoiceList_EventTickets),
+ };
 
 --- a/data/maps/PalletTown/map.json
 +++ b/data/maps/PalletTown/map.json
@@ -41,28 +84,79 @@ entitlement check.
 +PalletTown_EventScript_EventTicketDeliveryman::
 +	lock
 +	faceplayer
++	message PalletTown_Text_EventDeliverymanChoose
++	waitmessage
++	multichoice 12, 5, MULTICHOICE_EVENT_TICKETS, FALSE
++	switch VAR_RESULT
++	case 0, PalletTown_EventScript_ChooseAuroraTicket
++	case 1, PalletTown_EventScript_ChooseMysticTicket
++	case 2, PalletTown_EventScript_ChooseBothTickets
++	case 3, PalletTown_EventScript_EventTicketCancel
++	case 127, PalletTown_EventScript_EventTicketCancel
++	end
++
++PalletTown_EventScript_ChooseAuroraTicket::
 +	checkitem ITEM_AURORA_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_GiveAuroraTicket
-+	checkitem ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_GiveMysticTicket
-+	msgbox PalletTown_Text_EventDeliverymanAlreadyDelivered
++	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_AlreadyHasAuroraTicket
++	checkitemspace ITEM_AURORA_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	giveitem ITEM_AURORA_TICKET
++	msgbox PalletTown_Text_EventDeliverymanAuroraDelivered
 +	release
 +	end
 +
-+PalletTown_EventScript_GiveAuroraTicket::
++PalletTown_EventScript_ChooseMysticTicket::
++	checkitem ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_AlreadyHasMysticTicket
++	checkitemspace ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	giveitem ITEM_MYSTIC_TICKET
++	msgbox PalletTown_Text_EventDeliverymanMysticDelivered
++	release
++	end
++
++PalletTown_EventScript_ChooseBothTickets::
++	checkitem ITEM_AURORA_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_ChooseBothNeedAurora
++	checkitem ITEM_MYSTIC_TICKET, 1
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_ChooseMysticTicket
++	goto PalletTown_EventScript_AlreadyHasBothTickets
++	end
++
++PalletTown_EventScript_ChooseBothNeedAurora::
 +	checkitemspace ITEM_AURORA_TICKET, 1
 +	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
 +	giveitem ITEM_AURORA_TICKET
 +	checkitem ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_EventTicketsDelivered
-+
-+PalletTown_EventScript_GiveMysticTicket::
++	goto_if_eq VAR_RESULT, TRUE, PalletTown_EventScript_BothTicketsDelivered
 +	checkitemspace ITEM_MYSTIC_TICKET, 1
-+	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketBagFull
++	goto_if_eq VAR_RESULT, FALSE, PalletTown_EventScript_EventTicketPartial
 +	giveitem ITEM_MYSTIC_TICKET
++	goto PalletTown_EventScript_BothTicketsDelivered
++	end
 +
-+PalletTown_EventScript_EventTicketsDelivered::
-+	msgbox PalletTown_Text_EventDeliverymanDelivered
++PalletTown_EventScript_AlreadyHasAuroraTicket::
++	msgbox PalletTown_Text_EventDeliverymanAlreadyHasAurora
++	release
++	end
++
++PalletTown_EventScript_AlreadyHasMysticTicket::
++	msgbox PalletTown_Text_EventDeliverymanAlreadyHasMystic
++	release
++	end
++
++PalletTown_EventScript_AlreadyHasBothTickets::
++	msgbox PalletTown_Text_EventDeliverymanAlreadyHasBoth
++	release
++	end
++
++PalletTown_EventScript_BothTicketsDelivered::
++	msgbox PalletTown_Text_EventDeliverymanBothDelivered
++	release
++	end
++
++PalletTown_EventScript_EventTicketPartial::
++	msgbox PalletTown_Text_EventDeliverymanPartial
 +	release
 +	end
 +
@@ -71,15 +165,38 @@ entitlement check.
 +	release
 +	end
 +
-+PalletTown_Text_EventDeliverymanDelivered:
-+	.string "I have two special tickets for you.\\p"
-+	.string "Keep them safe. When the proper ferry\\n"
-+	.string "route opens, they'll take you somewhere\\l"
-+	.string "very unusual.$"
++PalletTown_EventScript_EventTicketCancel::
++	release
++	end
 +
-+PalletTown_Text_EventDeliverymanAlreadyDelivered:
-+	.string "I've already delivered both special\\n"
-+	.string "tickets addressed to you.$"
++PalletTown_Text_EventDeliverymanChoose:
++	.string "I have special event tickets for you.\\p"
++	.string "Which would you like?$"
++
++PalletTown_Text_EventDeliverymanAuroraDelivered:
++	.string "Here is your AURORATICKET.\\p"
++	.string "Keep it until the proper ferry route opens.$"
++
++PalletTown_Text_EventDeliverymanMysticDelivered:
++	.string "Here is your MYSTICTICKET.\\p"
++	.string "Keep it until the proper ferry route opens.$"
++
++PalletTown_Text_EventDeliverymanBothDelivered:
++	.string "Here are both special tickets.\\p"
++	.string "Keep them until the proper ferry routes open.$"
++
++PalletTown_Text_EventDeliverymanAlreadyHasAurora:
++	.string "You already have an AURORATICKET.$"
++
++PalletTown_Text_EventDeliverymanAlreadyHasMystic:
++	.string "You already have a MYSTICTICKET.$"
++
++PalletTown_Text_EventDeliverymanAlreadyHasBoth:
++	.string "You already have both special tickets.$"
++
++PalletTown_Text_EventDeliverymanPartial:
++	.string "I delivered what would fit.\\p"
++	.string "Make some space, then speak to me again.$"
 +
 +PalletTown_Text_EventDeliverymanBagFull:
 +	.string "Your KEY ITEMS POCKET has no room.\\p"
