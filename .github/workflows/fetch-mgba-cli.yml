@@ -1,0 +1,25 @@
+name: Fetch mGBA CLI
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-mgba-cli.yml"
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download official Ubuntu mGBA build
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 3 \
+            -o mGBA-0.10.5-ubuntu64-noble.tar.xz \
+            https://github.com/mgba-emu/mgba/releases/download/0.10.5/mGBA-0.10.5-ubuntu64-noble.tar.xz
+          sha256sum mGBA-0.10.5-ubuntu64-noble.tar.xz > SHA256SUMS-noble.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mgba-0.10.5-ubuntu-noble
+          path: |
+            mGBA-0.10.5-ubuntu64-noble.tar.xz
+            SHA256SUMS-noble.txt
