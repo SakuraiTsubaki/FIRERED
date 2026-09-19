@@ -35,25 +35,34 @@ The ticket itself is the entitlement.
 
 Ticket distribution is moved in-game: a dedicated Mystery Gift deliveryman is permanently placed in Pallet Town from the beginning of the game. No external Mystery Gift data is required.
 
-Talking to the NPC opens a four-choice menu:
+Talking to the NPC opens exactly four event-item choices:
 
-1. Aurora Ticket
-2. Mystic Ticket
-3. Both
-4. Cancel
+1. Eon Ticket
+2. Aurora Ticket
+3. Mystic Ticket
+4. Old Sea Map
 
+Pressing B cancels the menu.
+
+- `ITEM_EON_TICKET` already exists in FireRed's item table, but Southern Island gameplay does not; Southern Island/Latios-Latias event support must be ported before the ticket has a destination.
 - `ITEM_AURORA_TICKET` alone enables Birth Island in the Vermilion ferry destination logic.
 - `ITEM_MYSTIC_TICKET` alone enables Navel Rock in the Vermilion ferry destination logic.
 - Do not require `FLAG_ENABLE_SHIP_BIRTH_ISLAND` or `FLAG_ENABLE_SHIP_NAVEL_ROCK`.
 - The Pallet Town deliveryman is visible from the start and never disappears.
 - Choosing a ticket already owned does not create a duplicate.
-- Choosing **Both** gives only the missing ticket(s).
 - If a ticket is later absent from the bag, the player can choose it again.
+- FireRed does not define `ITEM_OLD_SEA_MAP`; Old Sea Map item data/icon and Faraway Island/Mew event logic must be ported from Emerald rather than assigning a fake item ID.
 - `FLAG_RECEIVED_AURORA_TICKET` and `FLAG_RECEIVED_MYSTIC_TICKET` are not required for access.
 - `FLAG_SHOWN_AURORA_TICKET` and `FLAG_SHOWN_MYSTIC_TICKET` may remain because they only control the one-time ferry explanation.
 - Legendary encounter completion flags remain unchanged.
 
 This makes old and new saves behave consistently: possession of the Key Item is the single source of truth.
+
+### Eon Ticket / Southern Island / Latios-Latias
+
+- Eon Ticket is selectable from the Pallet Town deliveryman.
+- FireRed already contains `ITEM_EON_TICKET`, including item/icon references.
+- Southern Island and its encounter/event state are not native FireRed content and must be ported before Eon Ticket is considered fully functional.
 
 ### Aurora Ticket / Birth Island / Deoxys
 
@@ -66,6 +75,13 @@ This makes old and new saves behave consistently: possession of the Key Item is 
 - Mystic Ticket can be selected from the Pallet Town deliveryman.
 - Navel Rock becomes a destination whenever the player has the Mystic Ticket and has reached the normal Seagallop ferry progression.
 - Lugia and Ho-Oh retain their original one-time encounter flags.
+
+### Old Sea Map / Faraway Island / Mew
+
+- Old Sea Map is one of the four Pallet Town choices.
+- FireRed contains a reserved `FLAG_RECEIVED_OLD_SEA_MAP` entry, explicitly noted in source as unused until Emerald, but does not define the Old Sea Map item itself.
+- Port the Emerald Old Sea Map key item, icon/palette, Faraway Island maps, ferry routing, Mew encounter behavior, and one-time completion state as one coherent feature.
+- Do not expose the choice as a fake/no-op final implementation.
 
 ### Altering Cave
 
