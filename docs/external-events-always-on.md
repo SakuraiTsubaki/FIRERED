@@ -23,23 +23,39 @@ Remove dependence on external distribution hardware, Wonder Cards, e-Reader data
 - Mystery Gift deliveryman must no longer disappear just because no valid Wonder Card is stored.
 - Aurora Ticket / Birth Island must not depend on external Wonder Card delivery.
 - Mystic Ticket / Navel Rock must not depend on external Wonder Card delivery.
-- Vermilion ferry access must not require an externally delivered enable flag.
+- Vermilion ferry access for Navel Rock and Birth Island must depend on the ticket item only, not `FLAG_ENABLE_SHIP_*`.
 - Altering Cave encounter sets must be selectable/rotatable in-game without Mystery Event transfer.
 - Visiting Trainer must use valid local trainer data; never bypass validation against uninitialized save data.
 
 ## Behaviour
 
+### Ticket rule
+
+The ticket itself is the entitlement.
+
+- `ITEM_AURORA_TICKET` alone enables Birth Island in the Vermilion ferry destination logic.
+- `ITEM_MYSTIC_TICKET` alone enables Navel Rock in the Vermilion ferry destination logic.
+- Do not require `FLAG_ENABLE_SHIP_BIRTH_ISLAND` or `FLAG_ENABLE_SHIP_NAVEL_ROCK`.
+- Local ticket distribution only needs to give the corresponding Key Item.
+- `FLAG_RECEIVED_AURORA_TICKET` and `FLAG_RECEIVED_MYSTIC_TICKET` are not required for access.
+- `FLAG_SHOWN_AURORA_TICKET` and `FLAG_SHOWN_MYSTIC_TICKET` may remain because they only control the one-time ferry explanation.
+- Legendary encounter completion flags remain unchanged.
+
+This makes old and new saves behave consistently: possession of the Key Item is the single source of truth.
+
 ### Aurora Ticket / Birth Island / Deoxys
 
-- Aurora Ticket can be obtained locally at any time after the normal Mystery Gift/event NPC becomes available.
-- Birth Island destination remains permanently available after normal ferry progression permits travel.
-- Deoxys encounter remains one-time according to the normal defeated/caught state.
+- Aurora Ticket can be obtained locally.
+- The local giver only needs to give `ITEM_AURORA_TICKET`.
+- Birth Island becomes a destination whenever the player has the Aurora Ticket and has reached the normal Seagallop ferry progression.
+- Deoxys remains a one-time encounter according to the original battle/event state.
 
 ### Mystic Ticket / Navel Rock / Lugia / Ho-Oh
 
 - Mystic Ticket can be obtained locally.
-- Navel Rock destination remains permanently available after normal ferry progression permits travel.
-- Lugia and Ho-Oh retain their normal one-time encounter flags.
+- The local giver only needs to give `ITEM_MYSTIC_TICKET`.
+- Navel Rock becomes a destination whenever the player has the Mystic Ticket and has reached the normal Seagallop ferry progression.
+- Lugia and Ho-Oh retain their original one-time encounter flags.
 
 ### Altering Cave
 
@@ -65,7 +81,9 @@ Remove dependence on external distribution hardware, Wonder Cards, e-Reader data
 
 ## Implementation rule
 
-Do not globally force every flag to TRUE. Patch the event entry points and their specific gates so unrelated game logic and save semantics remain intact.
+Do not globally force every flag to TRUE. Patch the specific external-distribution gates so unrelated game logic and save semantics remain intact.
+
+For ticket islands specifically, the Key Item is authoritative. Do not synchronize or repair obsolete enable/received flags just to make ferry access work.
 
 Existing saves and new saves must both work. Save normalization must be idempotent.
 
