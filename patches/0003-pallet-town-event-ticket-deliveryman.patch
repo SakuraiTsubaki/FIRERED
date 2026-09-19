@@ -8,8 +8,8 @@ distribution. The NPC exists from the beginning of the game and presents a
 four event-item choices:
 
   1. EON TICKET
-  2. AURORATICKET
-  3. MYSTICTICKET
+  2. MYSTICTICKET
+  3. AURORATICKET
   4. OLD SEA MAP
 
 B cancels the menu.
@@ -48,8 +48,8 @@ entitlement check.
 +
 +static const struct MenuAction sMultichoiceList_EventTickets[] = {
 +    { sText_EonTicketChoice },
-+    { sText_AuroraTicketChoice },
 +    { sText_MysticTicketChoice },
++    { sText_AuroraTicketChoice },
 +    { sText_OldSeaMapChoice }
 +};
 @@
@@ -93,8 +93,8 @@ entitlement check.
 +	multichoice 10, 4, MULTICHOICE_EVENT_TICKETS, FALSE
 +	switch VAR_RESULT
 +	case 0, PalletTown_EventScript_ChooseEonTicket
-+	case 1, PalletTown_EventScript_ChooseAuroraTicket
-+	case 2, PalletTown_EventScript_ChooseMysticTicket
++	case 1, PalletTown_EventScript_ChooseMysticTicket
++	case 2, PalletTown_EventScript_ChooseAuroraTicket
 +	case 3, PalletTown_EventScript_ChooseOldSeaMap
 +	case 127, PalletTown_EventScript_EventTicketCancel
 +	end
