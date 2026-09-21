@@ -85,13 +85,24 @@ On a legacy save, all extension bytes are zero and represent extension version 0
 
 When later features allocate fields inside the reserved regions, initialization must be explicit and idempotent. Existing retail IDs must never be renumbered as part of extension initialization.
 
-## ROM expansion
+## ROM expansion — maximum standard GBA profile
 
-The inspected ROMs are 16 MiB. FIRERED should not depend on locating and consuming arbitrary retail 0xFF gaps as its long-term capacity strategy.
+The inspected retail ROMs are 16 MiB.
 
-The normal GBA ROM window provides a straightforward 32 MiB address space before any bank-switching scheme is required. The executable source base should therefore be prepared for a 32 MiB build target, with linker-controlled placement and build-time overflow checks.
+For the FIRERED expanded profile, use the **maximum standard directly-addressable GBA ROM size: 32 MiB**.
 
-Retail free/padding runs remain evidence and comparison data, not the allocator of record.
+- physical/direct ROM image: `0x02000000` bytes = **32 MiB**
+- primary Game Pak window: `0x08000000 .. 0x09FFFFFF`
+- build end / pad-to address: `0x0A000000`
+- linker region: `ROM (rx) : ORIGIN = 0x08000000, LENGTH = 32M`
+
+The GBA also exposes ROM at `0x0A000000 .. 0x0BFFFFFF` and `0x0C000000 .. 0x0DFFFFFF`, but these are alternate wait-state images of the **same cartridge ROM**, not independent extra 32 MiB banks. They must not be counted as 64 or 96 MiB of ordinary directly-addressable cartridge storage.
+
+Therefore the standard-hardware FIRERED ceiling is fixed at **32 MiB**.
+
+Going above 32 MiB is explicitly out of the standard profile because it requires cartridge-specific mapping/bank switching or emulator/flashcart-specific behavior. If such a profile is ever added, it must be separate and must never silently replace the hardware-compatible 32 MiB profile.
+
+Retail free/padding runs remain evidence and comparison data, not the allocator of record. New data must be linker-controlled.
 
 ## What actually needs a width audit
 
@@ -126,7 +137,7 @@ No runtime form-switch system, form menu, battle-triggered transformation, or sp
 1. Keep the verified ROM/SAV evidence manifest in FIRERED.
 2. Keep an analyzer that reproduces ROM-header and save-sector verification.
 3. Reserve the verified 2212-byte save tail as a stable extension ABI.
-4. Prepare the executable FireRed source base for a 32 MiB ROM target.
+4. Build the FIRERED expanded profile at the **32 MiB standard GBA maximum**.
 5. Audit all narrowing ID/metadata boundaries.
 6. Add modern persistent metadata deliberately, with compatibility tests.
 7. Import verified later-generation data.
