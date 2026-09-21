@@ -1,0 +1,42 @@
+From: FIRERED project
+Subject: [PATCH] Add opt-in 32 MiB ROM build profile
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+The retail matching build is 16 MiB and must remain unchanged by default.
+
+The linker already declares the Game Pak ROM region as 32 MiB:
+    ROM (rx) : ORIGIN = 0x8000000, LENGTH = 32M
+
+The remaining fixed-size behavior is the objcopy --pad-to address. Add an
+opt-in FIRERED_EXPANDED build switch that pads the binary through 0x0A000000,
+producing a 32 MiB image while retaining the ordinary 0x09000000 / 16 MiB
+retail-compatible default.
+
+This does not allocate any content by fixed retail free-space offsets. New
+sections remain linker-controlled and the MEMORY region provides the hard
+32 MiB overflow boundary.
+
+--- a/Makefile
++++ b/Makefile
+@@
+ ROM := poke$(BUILD_NAME).gba
+ ELF := $(ROM:.gba=.elf)
+ MAP := $(ROM:.gba=.map)
+ SYM := $(ROM:.gba=.sym)
++
++# Keep byte-matching retail builds at 16 MiB. FIRERED expansion builds opt in
++# to the full 32 MiB Game Pak ROM window already declared by ld_script*.ld.
++FIRERED_EXPANDED ?= 0
++ifeq ($(FIRERED_EXPANDED),1)
++ROM_PAD_TO := 0x0A000000
++else
++ROM_PAD_TO := 0x09000000
++endif
+@@
+ # Builds the rom from the elf file
+ $(ROM): $(ELF)
+-	$(OBJCOPY) -O binary --gap-fill 0xFF --pad-to 0x9000000 $< $@
++	$(OBJCOPY) -O binary --gap-fill 0xFF --pad-to $(ROM_PAD_TO) $< $@
+
