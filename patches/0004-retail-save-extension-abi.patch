@@ -1,0 +1,60 @@
+From: FIRERED project
+Subject: [PATCH] Reserve retail-compatible save extension ABI
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+The retail save layout leaves zero-filled space at the end of SaveBlock2,
+SaveBlock1 and PokemonStorage. Project ROM/SAV evidence confirms these bytes
+are zero in Japanese v1.0/v1.1, English v1.0/v1.1, German, French, Italian
+and Spanish FireRed saves.
+
+Reserve the complete existing sector capacity now. No form-change semantics
+are assigned by this patch. Future persistent metadata must be subdivided
+inside these fixed arrays without changing their total sizes.
+
+Legacy save checksums remain numerically valid because the newly covered
+bytes were written as zero by the retail save routine.
+
+--- a/include/global.h
++++ b/include/global.h
+@@
+     /*0xB20*/ u8 filler_B20[0x400];
+     /*0xF20*/ u32 encryptionKey;
+-}; // size: 0xF24
++    /*0xF24*/ u8 fireredExpansion[0x5C];
++}; // size: 0xF80
+@@
+     /*0x3D24*/ u8 unused_3D24[16];
+     /*0x3D34*/ u32 towerChallengeId;
+     /*0x3D38*/ struct TrainerTower trainerTower[NUM_TOWER_CHALLENGE_TYPES];
+-}; // size: 0x3D68
++    /*0x3D68*/ u8 fireredExpansion[0x98];
++}; // size: 0x3E00
+
+--- a/include/pokemon_storage_system.h
++++ b/include/pokemon_storage_system.h
+@@
+ struct PokemonStorage
+ {
+     /*0x0000*/ u8 currentBox;
+     /*0x0001*/ struct BoxPokemon boxes[TOTAL_BOXES_COUNT][IN_BOX_COUNT];
+     /*0x8344*/ u8 boxNames[TOTAL_BOXES_COUNT][BOX_NAME_LENGTH + 1];
+     /*0x83C2*/ u8 boxWallpapers[TOTAL_BOXES_COUNT];
++    /*0x83D0*/ u8 fireredExpansion[0x7B0];
+ };
+
+--- a/src/save.c
++++ b/src/save.c
+@@
+ STATIC_ASSERT(sizeof(struct SaveBlock2) <= SECTOR_DATA_SIZE, SaveBlock2FreeSpace);
+ STATIC_ASSERT(sizeof(struct SaveBlock1) <= SECTOR_DATA_SIZE * (SECTOR_ID_SAVEBLOCK1_END - SECTOR_ID_SAVEBLOCK1_START + 1), SaveBlock1FreeSpace);
+ STATIC_ASSERT(sizeof(struct PokemonStorage) <= SECTOR_DATA_SIZE * (SECTOR_ID_PKMN_STORAGE_END - SECTOR_ID_PKMN_STORAGE_START + 1), PokemonStorageFreeSpace);
++
++// FIRERED intentionally reserves every byte already allocated to these
++// structures in the retail flash-sector map. This freezes the extension ABI:
++// future fields are assigned inside fireredExpansion[] without growing the
++// checksum-covered structure lengths again.
++STATIC_ASSERT(sizeof(struct SaveBlock2) == SECTOR_DATA_SIZE, FireredSaveBlock2ExtensionAbi);
++STATIC_ASSERT(sizeof(struct SaveBlock1) == SECTOR_DATA_SIZE * 4, FireredSaveBlock1ExtensionAbi);
++STATIC_ASSERT(sizeof(struct PokemonStorage) == SECTOR_DATA_SIZE * 9, FireredPokemonStorageExtensionAbi);
