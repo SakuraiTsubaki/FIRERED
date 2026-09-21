@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "generated_from": "user-provided FireRed ROM and SAV inputs",
+  "binary_storage_policy": "ROM/SAV binaries are not committed; only hashes, headers, structural verification and derived metadata are retained.",
+  "retail_source_reference": {
+    "repository": "pret/pokefirered",
+    "commit": "c75f352304d529f6ba92d4f74b9cf8b5c3810788"
+  },
+  "roms": [
+    {
+      "file": "Pocket Monsters - Fire Red (Japan).gba",
+      "game_code": "BPRJ",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "1e4af44b0c75cc8649bfb8649dc4ae5850bf5358bd6b9cd0bf779c99f9db1486",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pocket Monsters - Fire Red (Japan) (Rev 1).gba",
+      "game_code": "BPRJ",
+      "revision": 1,
+      "size": 16777216,
+      "sha256": "cec5fc4dbe38cd8026bd6664a1a041d9dc91e8d4249bab04e7bde70c3cdf4e06",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Fire Red Version (USA).gba",
+      "game_code": "BPRE",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "b59a65bb439b7dfdf2ffbbe5102be03de2501a71f5e081eec1c76f9d2ef3ba00",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Fire Red Version (USA, Europe) (Rev 1).gba",
+      "game_code": "BPRE",
+      "revision": 1,
+      "size": 16777216,
+      "sha256": "6d306e01ba04907efaa0611a32fee3b440a1e8ac8b4e0acdd223dc9281afa170",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Feuerrote Edition (Germany).gba",
+      "game_code": "BPRD",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "eed4fb0242bcbb6e0b0b80b197b47e3aec99ef4c5562cc45bae50ae86b970507",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Version Rouge Feu (France).gba",
+      "game_code": "BPRF",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "245866842349cedbe2a034c6d20438d26d18b627b3d0909d7cb795fc87d7675a",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Versione Rosso Fuoco (Italy).gba",
+      "game_code": "BPRI",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "ad52b593ef0c7439e1409d3f0a1ec3ff865a494ca46c2184fe65573759838f3a",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    },
+    {
+      "file": "Pokemon - Edicion Rojo Fuego (Spain).gba",
+      "game_code": "BPRS",
+      "revision": 0,
+      "size": 16777216,
+      "sha256": "ab696c065639e4d73c3c3ed9d4fbf9c7fed593761f3b6746256ff82465596554",
+      "header_checksum_valid": true,
+      "save_library": "FLASH1M_V103"
+    }
+  ],
+  "saves": [
+    {
+      "file": "Pocket Monsters - Fire Red (Japan).sav",
+      "size": 131072,
+      "sha256": "91dd194420ae70e6393d8ef2c1e5dca165ddf73b789aee08ad85407a64f51bfd",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        1,
+        2
+      ],
+      "active_counter": 2
+    },
+    {
+      "file": "Pocket Monsters - Fire Red (Japan) (Rev 1).sav",
+      "size": 131072,
+      "sha256": "d2b81b862c7fed12d1e85a86c0126bd53610cc0b7b2b0d359e1cdd97fb5e5c11",
+      "valid_save_sectors": 14,
+      "save_counters": [
+        1
+      ],
+      "active_counter": 1
+    },
+    {
+      "file": "Pokemon - Fire Red Version (USA).sav",
+      "size": 131072,
+      "sha256": "037909b3ab5be5403df01713223ea7d9ebb7230c856a7c468a980f68ccd0e231",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        4,
+        5
+      ],
+      "active_counter": 5
+    },
+    {
+      "file": "Pokemon - Fire Red Version (USA, Europe) (Rev 1).sav",
+      "size": 131072,
+      "sha256": "43834c0c4fb4818d9ad15eb5a07a8cb35acc14250f45ccfaa422d15f8e1d9be3",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        5,
+        6
+      ],
+      "active_counter": 6
+    },
+    {
+      "file": "Pokemon - Feuerrote Edition (Germany).sav",
+      "size": 131072,
+      "sha256": "9fd0808f490b578d530afc2cf48fe2ba1327fd39dd9533d1a05bb1426cd28c2d",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        3,
+        4
+      ],
+      "active_counter": 4
+    },
+    {
+      "file": "Pokemon - Version Rouge Feu (France).sav",
+      "size": 131072,
+      "sha256": "e4fcc06c69b8d2fbc463a3f9990b78ece716ce15aeb0292f625bcd2108da4af9",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        6,
+        7
+      ],
+      "active_counter": 7
+    },
+    {
+      "file": "Pokemon - Versione Rosso Fuoco (Italy).sav",
+      "size": 131072,
+      "sha256": "e2e1c7dbcabdd2d4d31155a3ae371552e0716d03c599df6cce676b400905e6eb",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        4,
+        5
+      ],
+      "active_counter": 5
+    },
+    {
+      "file": "Pokemon - Edicion Rojo Fuego (Spain).sav",
+      "size": 131072,
+      "sha256": "9a901c3cde5f738d13e032c26a6d67d64ceb187a300f4ccecb50cf1c865ea377",
+      "valid_save_sectors": 28,
+      "save_counters": [
+        2,
+        3
+      ],
+      "active_counter": 3
+    }
+  ],
+  "save_verification": {
+    "all_observed_sector_checksums_valid": true,
+    "all_observed_extension_tails_zero": true,
+    "special_sectors_28_31_blank_in_all_inputs": true,
+    "layout": {
+      "sector_size": 4096,
+      "sector_data_size": 3968,
+      "normal_save_sectors_per_slot": 14,
+      "slots": 2,
+      "saveblock2": {
+        "size": 3876,
+        "capacity": 3968,
+        "zero_tail": 92
+      },
+      "saveblock1": {
+        "size": 15720,
+        "capacity": 15872,
+        "zero_tail": 152
+      },
+      "pokemon_storage": {
+        "size": 33744,
+        "capacity": 35712,
+        "zero_tail": 1968
+      },
+      "total_zero_tail": 2212
+    }
+  }
+}
