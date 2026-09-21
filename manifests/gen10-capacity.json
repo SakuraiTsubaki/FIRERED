@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "project": "SakuraiTsubaki/FIRERED",
   "priority": "retail-rom-save-expansion-before-form-change",
   "form_change_status": "deferred",
@@ -23,8 +23,21 @@
     "note": "Retail FireRed widths; modern expansion packed widths are not the FIRERED baseline."
   },
   "rom": {
-    "observed_size": 16777216,
-    "phase1_target_size": 33554432,
+    "observed_retail_size_bytes": 16777216,
+    "observed_retail_size_mib": 16,
+    "expanded_standard_max_bytes": 33554432,
+    "expanded_standard_max_mib": 32,
+    "primary_window_start": "0x08000000",
+    "primary_window_end": "0x09FFFFFF",
+    "pad_to": "0x0A000000",
+    "linker_origin": "0x08000000",
+    "linker_length": "32M",
+    "mirrors": [
+      "0x0A000000-0x0BFFFFFF",
+      "0x0C000000-0x0DFFFFFF"
+    ],
+    "mirrors_are_additional_capacity": false,
+    "above_32_mib_policy": "separate-nonstandard-profile-only",
     "allocation_policy": "linker-controlled; do not treat arbitrary retail 0xFF runs as canonical allocator space"
   },
   "save": {
