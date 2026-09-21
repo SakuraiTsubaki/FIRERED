@@ -1,22 +1,28 @@
 From: FIRERED project
-Subject: [PATCH] Add opt-in 32 MiB ROM build profile
+Subject: [PATCH] Add maximum-standard 32 MiB ROM build profile
 
 Reference target: pret/pokefirered
 Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
 
-The retail matching build is 16 MiB and must remain unchanged by default.
+The retail matching build is 16 MiB and remains unchanged by default.
 
-The linker already declares the Game Pak ROM region as 32 MiB:
+The GBA's ordinary directly-addressable Game Pak ROM image is at most 32 MiB:
+    0x08000000 .. 0x09FFFFFF
+
+The 0x0A000000 and 0x0C000000 ROM regions are alternate wait-state images of
+the same cartridge ROM, not additional independent capacity.
+
+The FireRed linker already declares:
     ROM (rx) : ORIGIN = 0x8000000, LENGTH = 32M
 
-The remaining fixed-size behavior is the objcopy --pad-to address. Add an
-opt-in FIRERED_EXPANDED build switch that pads the binary through 0x0A000000,
-producing a 32 MiB image while retaining the ordinary 0x09000000 / 16 MiB
-retail-compatible default.
+Therefore FIRERED_EXPANDED=1 selects the maximum standard-hardware-compatible
+ROM image size, padding through 0x0A000000 (32 MiB). Builds above 32 MiB are
+intentionally not part of this profile; they would require a separate
+cartridge mapper/bank-switching or emulator-specific design.
 
-This does not allocate any content by fixed retail free-space offsets. New
-sections remain linker-controlled and the MEMORY region provides the hard
-32 MiB overflow boundary.
+This does not allocate content by fixed retail free-space offsets. New
+sections remain linker-controlled, and the 32M MEMORY declaration is the
+hard overflow boundary.
 
 --- a/Makefile
 +++ b/Makefile
@@ -26,8 +32,8 @@ sections remain linker-controlled and the MEMORY region provides the hard
  MAP := $(ROM:.gba=.map)
  SYM := $(ROM:.gba=.sym)
 +
-+# Keep byte-matching retail builds at 16 MiB. FIRERED expansion builds opt in
-+# to the full 32 MiB Game Pak ROM window already declared by ld_script*.ld.
++# Retail matching profile: 16 MiB.
++# FIRERED expanded profile: maximum standard GBA ROM image, 32 MiB.
 +FIRERED_EXPANDED ?= 0
 +ifeq ($(FIRERED_EXPANDED),1)
 +ROM_PAD_TO := 0x0A000000
@@ -39,4 +45,3 @@ sections remain linker-controlled and the MEMORY region provides the hard
  $(ROM): $(ELF)
 -	$(OBJCOPY) -O binary --gap-fill 0xFF --pad-to 0x9000000 $< $@
 +	$(OBJCOPY) -O binary --gap-fill 0xFF --pad-to $(ROM_PAD_TO) $< $@
-
