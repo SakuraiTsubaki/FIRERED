@@ -1,0 +1,112 @@
+From: FIRERED project
+Subject: [PATCH 8] Bridge Pokédex flags to the 4096-species extension
+
+Applies after:
+    patches/0004-retail-save-extension-abi.patch
+    patches/0007-gen10-save-schema.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+Keep retail FireRed's anti-cheat Seen/Caught behavior for the native National
+Dex range. Mirror native SET operations into the new extension bitsets, and
+use the extension bitsets as the authoritative storage for National Dex
+numbers above the retail range up to 4096.
+
+Legacy saves remain compatible:
+- their new extension bytes are all zero;
+- native IDs still read from the original retail fields;
+- no bulk migration is required;
+- extension magic/version is initialized lazily on the first SET operation.
+
+This patch extends flag storage/API only. The Pokédex UI list and species-to-
+National-Dex mapping are expanded separately when later-generation species data
+is imported.
+
+--- a/src/pokedex_screen.c
++++ b/src/pokedex_screen.c
+@@
+ #include "pokedex_area_markers.h"
+ #include "field_specials.h"
++#include "pokemon_storage_system.h"
+@@
+-s8 DexScreen_GetSetPokedexFlag(u16 nationalDexNo, u8 caseId, bool8 indexIsSpecies)
++static void EnsureFireredExpansionHeader(void)
++{
++    if (gSaveBlock2Ptr->fireredExpansion.magic != FIRERED_EXPANSION_MAGIC
++     || gSaveBlock2Ptr->fireredExpansion.version != FIRERED_EXPANSION_VERSION)
++    {
++        memset(&gSaveBlock2Ptr->fireredExpansion, 0, sizeof(gSaveBlock2Ptr->fireredExpansion));
++        gSaveBlock2Ptr->fireredExpansion.magic = FIRERED_EXPANSION_MAGIC;
++        gSaveBlock2Ptr->fireredExpansion.version = FIRERED_EXPANSION_VERSION;
++    }
++}
++
++static s8 FireredExtendedDexGetSetFlag(u16 nationalDexNo, u8 caseId)
++{
++    u16 dexIndex;
++    u16 byteIndex;
++    u8 mask;
++    u8 *seen = gPokemonStoragePtr->fireredExpansion.dexSeen;
++    u8 *caught = gPokemonStoragePtr->fireredExpansion.dexCaught;
++
++    if (nationalDexNo == 0 || nationalDexNo > FIRERED_EXTENDED_SPECIES_CAPACITY)
++        return 0;
++
++    dexIndex = nationalDexNo - 1;
++    byteIndex = dexIndex / 8;
++    mask = 1 << (dexIndex % 8);
++
++    switch (caseId)
++    {
++    case FLAG_GET_SEEN:
++        return (seen[byteIndex] & mask) != 0;
++    case FLAG_GET_CAUGHT:
++        return (caught[byteIndex] & mask) != 0;
++    case FLAG_SET_SEEN:
++        EnsureFireredExpansionHeader();
++        seen[byteIndex] |= mask;
++        return 0;
++    case FLAG_SET_CAUGHT:
++        EnsureFireredExpansionHeader();
++        seen[byteIndex] |= mask;
++        caught[byteIndex] |= mask;
++        return 0;
++    }
++    return 0;
++}
++
++s8 DexScreen_GetSetPokedexFlag(u16 nationalDexNo, u8 caseId, bool8 indexIsSpecies)
+ {
+-    u8 index;
++    u16 index;
+     u8 bit;
+     u8 mask;
+     s8 retVal;
+ 
+     if (indexIsSpecies)
+         nationalDexNo = SpeciesToNationalPokedexNum(nationalDexNo);
+ 
++    if (nationalDexNo == 0 || nationalDexNo > FIRERED_EXTENDED_SPECIES_CAPACITY)
++        return 0;
++
++    if (nationalDexNo > NATIONAL_DEX_COUNT)
++        return FireredExtendedDexGetSetFlag(nationalDexNo, caseId);
++
+     nationalDexNo--;
+     index = nationalDexNo / 8;
+@@
+     case FLAG_SET_SEEN:
+         gSaveBlock2Ptr->pokedex.seen[index] |= mask;
+         // Anticheat
+         gSaveBlock1Ptr->seen1[index] |= mask;
+         gSaveBlock1Ptr->seen2[index] |= mask;
++        FireredExtendedDexGetSetFlag(nationalDexNo + 1, FLAG_SET_SEEN);
+         break;
+     case FLAG_SET_CAUGHT:
+         gSaveBlock2Ptr->pokedex.owned[index] |= mask;
++        FireredExtendedDexGetSetFlag(nationalDexNo + 1, FLAG_SET_CAUGHT);
+         break;
+     }
+     return retVal;
+ }
