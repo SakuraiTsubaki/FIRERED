@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "project": "SakuraiTsubaki/FIRERED",
+  "source": {
+    "repository": "pret/pokefirered",
+    "commit": "c75f352304d529f6ba92d4f74b9cf8b5c3810788"
+  },
+  "form_changes": "deferred",
+  "namespaces": {
+    "species": {
+      "target_bits": 16,
+      "status": "ready",
+      "evidence": [
+        "BoxPokemon species u16",
+        "trainer species u16",
+        "wild species u16"
+      ]
+    },
+    "items": {
+      "target_bits": 16,
+      "status": "ready",
+      "evidence": [
+        "heldItem u16",
+        "ItemSlot.itemId u16",
+        "trainer heldItem u16"
+      ]
+    },
+    "moves": {
+      "target_bits": 16,
+      "persistent_status": "ready",
+      "level_up_status": "blocked-retail-9-bit",
+      "remediation": "patches/0006-wide-levelup-learnsets.patch"
+    },
+    "abilities": {
+      "target_bits": 16,
+      "status": "blocked-retail-u8",
+      "blockers": [
+        "SpeciesInfo abilities[2] u8",
+        "BattlePokemon ability u8",
+        "gLastUsedAbility u8",
+        "battle message ability byte encoding"
+      ],
+      "slot_target": 3,
+      "persistence_status": "design-required"
+    },
+    "types": {
+      "target_bits": 8,
+      "status": "ready-for-gen10-headroom"
+    },
+    "pokeballs": {
+      "status": "blocked-retail-4-bit-persistent",
+      "persistence_status": "design-required"
+    },
+    "dex": {
+      "target_species_capacity": 4096,
+      "bitset_bytes_each": 512,
+      "storage_schema": "patches/0007-gen10-save-schema.patch",
+      "accessor_status": "pending"
+    }
+  },
+  "fixed_save_extension": {
+    "total_bytes": 2212,
+    "saveblock2_bytes": 92,
+    "saveblock1_bytes": 152,
+    "pokemon_storage_bytes": 1968,
+    "legacy_zero_verified": true
+  }
+}
