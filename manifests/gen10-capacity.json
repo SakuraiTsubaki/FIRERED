@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "project": "SakuraiTsubaki/FIRERED",
   "priority": "retail-rom-save-expansion-before-form-change",
   "form_change_status": "deferred",
@@ -78,6 +78,24 @@
     "total_extension_bytes": 2212,
     "legacy_extension_bytes_verified_zero": true,
     "migration_required_for_reservation_only": false,
-    "rule": "Reserve tail bytes first; assign later feature semantics inside the fixed extension ABI."
+    "rule": "Reserve tail bytes first; assign later feature semantics inside the fixed extension ABI.",
+    "dex_extension": {
+      "species_capacity": 4096,
+      "seen_bytes": 512,
+      "caught_bytes": 512
+    }
+  },
+  "box_pokemon_extension": {
+    "retail_size_bytes": 80,
+    "expanded_size_bytes": 80,
+    "header_word": "former unknown / MON_DATA_ENCRYPT_SEPARATOR",
+    "bits": {
+      "ability_slot_high": "bit 0",
+      "pokeball_high": "bits 1..2",
+      "reserved_modern_type": "bits 3..8",
+      "reserved_modern_flag": "bit 9",
+      "reserved_stat_flags": "bits 10..15"
+    },
+    "checksum_covered": false
   }
 }
