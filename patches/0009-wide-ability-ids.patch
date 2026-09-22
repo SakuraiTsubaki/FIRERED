@@ -1,0 +1,243 @@
+From: FIRERED project
+Subject: [PATCH 9] Widen global ability IDs to 16 bits
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+Modern reference: rh-hideout/pokeemerald-expansion@75b806a3ab57a81ff1eb6179288981f0b3cc3050
+
+Modern ability IDs already exceed 255, so FireRed's u8 ability paths are a
+present blocker for the Generation-10 profile.
+
+This patch widens the global ability ID path to u16 while deliberately leaving
+the retail BoxPokemon abilityNum:1 persistence unchanged. Hidden-ability
+persistence is handled by a later per-mon metadata patch.
+
+Important compatibility detail: CONTROLLER_CHOOSEPOKEMON already transfers
+8 bytes while only 7 were initialized. Use the previously-unused byte 7 for
+the high byte of the ability ID. Packet length therefore stays unchanged.
+
+BattlePokemon also stays the same size: the old byte at 0x23 was unused, so
+ability grows from u8 to u16 and type1/type2 move one byte later inside the
+same four-byte region.
+
+--- a/include/constants/pokemon.h
++++ b/include/constants/pokemon.h
+@@
+ #define MAX_MON_MOVES 4
++#define NUM_ABILITY_SLOTS 3
+
+--- a/include/pokemon.h
++++ b/include/pokemon.h
+@@
+-    /*0x16*/ u8 abilities[2];
+-    /*0x18*/ u8 safariZoneFleeRate;
+-    /*0x19*/ u8 bodyColor : 7;
++    /*expanded*/ u16 abilities[NUM_ABILITY_SLOTS];
++    u8 safariZoneFleeRate;
++    u8 bodyColor : 7;
+             u8 noFlip : 1;
+@@
+-    /*0x20*/ u8 ability;
+-    /*0x21*/ u8 type1;
+-    /*0x22*/ u8 type2;
+-    /*0x23*/ u8 unknown;
++    /*0x20*/ u16 ability;
++    /*0x22*/ u8 type1;
++    /*0x23*/ u8 type2;
+@@
+-u8 GetAbilityBySpecies(u16 species, bool8 abilityNum);
+-u8 GetMonAbility(struct Pokemon *mon);
++u16 GetAbilityBySpecies(u16 species, u8 abilityNum);
++u16 GetMonAbility(struct Pokemon *mon);
+
+--- a/include/battle.h
++++ b/include/battle.h
+@@
+ struct BattleHistory
+ {
+     /*0x00*/ u16 usedMoves[2][8]; // 0xFFFF means move not used (confuse self hit, etc)
+-    /*0x20*/ u8 abilities[MAX_BATTLERS_COUNT / 2];
+-    /*0x22*/ u8 itemEffects[MAX_BATTLERS_COUNT / 2];
+-    /*0x24*/ u16 trainerItems[MAX_BATTLERS_COUNT];
+-    /*0x2C*/ u8 itemsNo;
++    /*0x20*/ u16 abilities[MAX_BATTLERS_COUNT / 2];
++    /*0x24*/ u8 itemEffects[MAX_BATTLERS_COUNT / 2];
++    /*0x26*/ u16 trainerItems[MAX_BATTLERS_COUNT];
++    /*0x2E*/ u8 itemsNo;
+ };
+@@
+-    u8 abilityPreventingSwitchout;
++    u16 abilityPreventingSwitchout;
+     u8 hpScale;
+@@
+-extern u8 gLastUsedAbility;
++extern u16 gLastUsedAbility;
+
+--- a/include/battle_message.h
++++ b/include/battle_message.h
+@@
+ #define PREPARE_ABILITY_BUFFER(textVar, abilityId)                          \
+ {                                                                           \
+     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                                  \
+     textVar[1] = B_BUFF_ABILITY;                                            \
+     textVar[2] = abilityId;                                                 \
+-    textVar[3] = B_BUFF_EOS;                                                \
++    textVar[3] = (abilityId & 0xFF00) >> 8;                                 \
++    textVar[4] = B_BUFF_EOS;                                                \
+ }
+@@
+ struct BattleMsgData
+ {
+     u16 currentMove;
+     u16 originallyUsedMove;
+     u16 lastItem;
+-    u8 lastAbility;
++    u16 lastAbility;
+     u8 scrActive;
+     u8 bakScriptPartyIdx;
+     u8 hpScale;
+     u8 itemEffectBattler;
+     u8 moveType;
+-    u8 abilities[4];
++    u16 abilities[4];
+     u8 textBuffs[3][0x10];
+ };
+
+--- a/include/battle_util.h
++++ b/include/battle_util.h
+@@
+-u8 AbilityBattleEffects(u8 caseID, u8 battler, u8 ability, u8 special, u16 moveArg);
++u8 AbilityBattleEffects(u8 caseID, u8 battler, u16 ability, u8 special, u16 moveArg);
+
+--- a/include/battle_ai_script_commands.h
++++ b/include/battle_ai_script_commands.h
+@@
+-void RecordAbilityBattle(u8 bank, u8 abilityId);
++void RecordAbilityBattle(u8 bank, u16 abilityId);
+
+--- a/include/battle_controllers.h
++++ b/include/battle_controllers.h
+@@
+-void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 arg2, u8 abilityId, u8 *arg4);
++void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 arg2, u16 abilityId, u8 *arg4);
+
+--- a/src/pokemon.c
++++ b/src/pokemon.c
+@@
+-u8 GetAbilityBySpecies(u16 species, bool8 abilityNum)
++u16 GetAbilityBySpecies(u16 species, u8 abilityNum)
+ {
+-    if (abilityNum)
+-        gLastUsedAbility = gSpeciesInfo[species].abilities[1];
+-    else
+-        gLastUsedAbility = gSpeciesInfo[species].abilities[0];
++    if (abilityNum >= NUM_ABILITY_SLOTS)
++        abilityNum = 0;
++
++    gLastUsedAbility = gSpeciesInfo[species].abilities[abilityNum];
+ 
+     return gLastUsedAbility;
+ }
+ 
+-u8 GetMonAbility(struct Pokemon *mon)
++u16 GetMonAbility(struct Pokemon *mon)
+ {
+     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
+     u8 abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM, NULL);
+     return GetAbilityBySpecies(species, abilityNum);
+ }
+
+--- a/src/battle_main.c
++++ b/src/battle_main.c
+@@
+-EWRAM_DATA u8 gLastUsedAbility = 0;
++EWRAM_DATA u16 gLastUsedAbility = 0;
+
+--- a/src/battle_message.c
++++ b/src/battle_message.c
+@@
+-static EWRAM_DATA u8 sBattlerAbilities[MAX_BATTLERS_COUNT] = {};
++static EWRAM_DATA u16 sBattlerAbilities[MAX_BATTLERS_COUNT] = {};
+@@
+         case B_BUFF_ABILITY: // ability names
+-            StringAppend(dst, gAbilityNames[src[srcId + 1]]);
+-            srcId += 2;
++            StringAppend(dst, gAbilityNames[T1_READ_16(&src[srcId + 1])]);
++            srcId += 3;
+             break;
+
+--- a/src/battle_util.c
++++ b/src/battle_util.c
+@@
+-u8 AbilityBattleEffects(u8 caseID, u8 battler, u8 ability, u8 special, u16 moveArg)
++u8 AbilityBattleEffects(u8 caseID, u8 battler, u16 ability, u8 special, u16 moveArg)
+ {
+
+--- a/src/battle_ai_script_commands.c
++++ b/src/battle_ai_script_commands.c
+@@
+-void RecordAbilityBattle(u8 battlerId, u8 abilityId)
++void RecordAbilityBattle(u8 battlerId, u16 abilityId)
+ {
+
+--- a/src/battle_controllers.c
++++ b/src/battle_controllers.c
+@@
+-void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 slotId, u8 abilityId, u8 *data)
++void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 slotId, u16 abilityId, u8 *data)
+ {
+     s32 i;
+ 
+     sBattleBuffersTransferData[0] = CONTROLLER_CHOOSEPOKEMON;
+     sBattleBuffersTransferData[1] = caseId;
+     sBattleBuffersTransferData[2] = slotId;
+-    sBattleBuffersTransferData[3] = abilityId;
++    sBattleBuffersTransferData[3] = abilityId & 0xFF;
+     for (i = 0; i < 3; i++)
+         sBattleBuffersTransferData[4 + i] = data[i];
+-    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 8);  // Only 7 bytes were written.
++    sBattleBuffersTransferData[7] = abilityId >> 8;
++    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 8);
+ }
+
+--- a/src/battle_controller_player.c
++++ b/src/battle_controller_player.c
+@@
+-    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3];
++    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3]
++                                                  | (gBattleBufferA[gActiveBattler][7] << 8);
+
+--- a/src/battle_controller_pokedude.c
++++ b/src/battle_controller_pokedude.c
+@@
+-    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3];
++    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3]
++                                                  | (gBattleBufferA[gActiveBattler][7] << 8);
+
+--- a/src/battle_controller_oak_old_man.c
++++ b/src/battle_controller_oak_old_man.c
+@@
+-    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3];
++    *(&gBattleStruct->abilityPreventingSwitchout) = gBattleBufferA[gActiveBattler][3]
++                                                  | (gBattleBufferA[gActiveBattler][7] << 8);
+
+--- a/src/battle_script_commands.c
++++ b/src/battle_script_commands.c
+@@
+-                u8 ability;
++                u16 ability;
+
+--- a/src/battle_ai_switch_items.c
++++ b/src/battle_ai_switch_items.c
+@@
+-        u8 monAbility;
++        u16 monAbility;
+@@
+-        u8 monAbility;
++        u16 monAbility;
+
+--- a/src/wild_encounter.c
++++ b/src/wild_encounter.c
+@@
+-        u8 ability = GetMonAbility(&gPlayerParty[0]);
++        u16 ability = GetMonAbility(&gPlayerParty[0]);
