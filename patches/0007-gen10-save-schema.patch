@@ -26,9 +26,6 @@ Dex accessor wiring are separate follow-up patches.
 --- a/include/global.h
 +++ b/include/global.h
 @@
- struct BattleTowerData
- {
-@@
  }; /* size = 0x7E8 */
  
 +#define FIRERED_EXPANSION_MAGIC   0x58455246 // "FREX" in little endian
