@@ -12,11 +12,13 @@ on:
       - "patches/0009-*.patch"
       - "patches/0010-*.patch"
       - "tools/audit_gen10_widths.py"
+      - "tools/apply_context_patch.py"
       - ".github/workflows/gen10-expansion.yml"
   pull_request:
     paths:
       - "patches/**"
       - "tools/audit_gen10_widths.py"
+      - "tools/apply_context_patch.py"
       - ".github/workflows/gen10-expansion.yml"
   workflow_dispatch:
 
@@ -60,14 +62,17 @@ jobs:
           ./install.sh ../
 
       - name: Apply Gen10 foundation patches
-        working-directory: upstream
         run: |
           set -eux
-          for patch in             ../patches/0004-retail-save-extension-abi.patch             ../patches/0005-32mb-rom-profile.patch             ../patches/0006-wide-levelup-learnsets.patch             ../patches/0007-gen10-save-schema.patch             ../patches/0008-extended-dex-flags.patch             ../patches/0009-wide-ability-ids.patch             ../patches/0010-boxmon-modern-metadata.patch
-          do
-            git apply --check "$patch"
-            git apply "$patch"
-          done
+          python3 tools/apply_context_patch.py upstream \
+            patches/0004-retail-save-extension-abi.patch \
+            patches/0005-32mb-rom-profile.patch \
+            patches/0006-wide-levelup-learnsets.patch \
+            patches/0007-gen10-save-schema.patch \
+            patches/0008-extended-dex-flags.patch \
+            patches/0009-wide-ability-ids.patch \
+            patches/0010-boxmon-modern-metadata.patch
+          git -C upstream diff --check
 
       - name: Run width audit
         run: |
