@@ -16,18 +16,14 @@ The FireRed linker already declares:
     ROM (rx) : ORIGIN = 0x8000000, LENGTH = 32M
 
 Therefore FIRERED_EXPANDED=1 selects the maximum standard-hardware-compatible
-ROM image size, padding through 0x0A000000 (32 MiB). Builds above 32 MiB are
-intentionally not part of this profile; they would require a separate
-cartridge mapper/bank-switching or emulator-specific design.
-
-This does not allocate content by fixed retail free-space offsets. New
-sections remain linker-controlled, and the 32M MEMORY declaration is the
-hard overflow boundary.
+ROM image size, padding through 0x0A000000 (32 MiB).
 
 --- a/Makefile
 +++ b/Makefile
 @@
  ROM := poke$(BUILD_NAME).gba
+ OBJ_DIR := $(BUILD_DIR)/$(BUILD_NAME)
+ 
  ELF := $(ROM:.gba=.elf)
  MAP := $(ROM:.gba=.map)
  SYM := $(ROM:.gba=.sym)
