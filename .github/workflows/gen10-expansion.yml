@@ -1,0 +1,90 @@
+name: Gen10 Expansion
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "patches/0004-*.patch"
+      - "patches/0005-*.patch"
+      - "patches/0006-*.patch"
+      - "patches/0007-*.patch"
+      - "patches/0008-*.patch"
+      - "patches/0009-*.patch"
+      - "patches/0010-*.patch"
+      - "tools/audit_gen10_widths.py"
+      - ".github/workflows/gen10-expansion.yml"
+  pull_request:
+    paths:
+      - "patches/**"
+      - "tools/audit_gen10_widths.py"
+      - ".github/workflows/gen10-expansion.yml"
+  workflow_dispatch:
+
+jobs:
+  apply-and-build:
+    runs-on: ubuntu-latest
+    env:
+      GAME_VERSION: FIRERED
+      GAME_LANGUAGE: ENGLISH
+      GAME_REVISION: 0
+      MODERN: 1
+      COMPARE: 0
+      FIRERED_EXPANDED: 1
+
+    steps:
+      - name: Checkout FIRERED project
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned FireRed source
+        uses: actions/checkout@v4
+        with:
+          repository: pret/pokefirered
+          ref: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+          path: upstream
+
+      - name: Checkout agbcc
+        uses: actions/checkout@v4
+        with:
+          repository: pret/agbcc
+          path: upstream/agbcc
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
+
+      - name: Install agbcc
+        working-directory: upstream/agbcc
+        run: |
+          ./build.sh
+          ./install.sh ../
+
+      - name: Apply Gen10 foundation patches
+        working-directory: upstream
+        run: |
+          set -eux
+          for patch in             ../patches/0004-retail-save-extension-abi.patch             ../patches/0005-32mb-rom-profile.patch             ../patches/0006-wide-levelup-learnsets.patch             ../patches/0007-gen10-save-schema.patch             ../patches/0008-extended-dex-flags.patch             ../patches/0009-wide-ability-ids.patch             ../patches/0010-boxmon-modern-metadata.patch
+          do
+            git apply --check "$patch"
+            git apply "$patch"
+          done
+
+      - name: Run width audit
+        run: |
+          python3 tools/audit_gen10_widths.py upstream -o gen10-width-audit-ci.json
+          cat gen10-width-audit-ci.json
+
+      - name: Verify Gen10 foundation constants
+        run: |
+          set -eux
+          grep -R "LEVEL_UP_MOVE_ENTRY_WORDS 2" upstream/include/constants/pokemon.h
+          grep -R "FIRERED_EXTENDED_SPECIES_CAPACITY 4096" upstream/include/pokemon_storage_system.h
+          grep -R "u16 abilities\[NUM_ABILITY_SLOTS\]" upstream/include/pokemon.h
+          grep -R "ROM_PAD_TO := 0x0A000000" upstream/Makefile
+
+      - name: Build 32 MiB FIRERED expanded profile
+        working-directory: upstream
+        run: |
+          make -j"$(nproc)" all
+          test "$(stat -c%s pokefirered.gba)" -eq 33554432
+          echo "Expanded ROM size: $(stat -c%s pokefirered.gba) bytes"
