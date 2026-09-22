@@ -1,0 +1,100 @@
+From: FIRERED project
+Subject: [PATCH 7] Define typed Generation-10 save extension schema
+
+Applies after:
+    patches/0004-retail-save-extension-abi.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+Patch 0004 reserves every verified zero-filled byte already available at the end
+of the retail save structures. Give those fixed regions a typed ABI now,
+without increasing any structure size.
+
+The first concrete allocation is a 4096-species extended Pokédex namespace:
+    seen   = 4096 bits = 512 bytes
+    caught = 4096 bits = 512 bytes
+
+The remaining 944 bytes in PokemonStorage stay reserved. SaveBlock2 receives
+a small version/header area and keeps 84 bytes reserved. SaveBlock1 remains
+fully reserved for later persistent systems.
+
+A legacy retail save has all of these bytes zero, so magic/version zero means
+"legacy or uninitialized extension". Initialization and dual native/extended
+Dex accessor wiring are separate follow-up patches.
+
+--- a/include/global.h
++++ b/include/global.h
+@@
+ struct BattleTowerData
+ {
+@@
+ }; /* size = 0x7E8 */
+ 
++#define FIRERED_EXPANSION_MAGIC   0x58455246 // "FREX" in little endian
++#define FIRERED_EXPANSION_VERSION 1
++
++struct FireredSaveBlock2Extension
++{
++    u32 magic;
++    u16 version;
++    u16 flags;
++    u8 reserved[0x54];
++}; // 0x5C
++
++struct FireredSaveBlock1Extension
++{
++    u8 reserved[0x98];
++};
++
+ struct SaveBlock2
+ {
+@@
+     /*0xB20*/ u8 filler_B20[0x400];
+     /*0xF20*/ u32 encryptionKey;
+-    /*0xF24*/ u8 fireredExpansion[0x5C];
++    /*0xF24*/ struct FireredSaveBlock2Extension fireredExpansion;
+ }; // size: 0xF80
+@@
+     /*0x3D24*/ u8 unused_3D24[16];
+     /*0x3D34*/ u32 towerChallengeId;
+     /*0x3D38*/ struct TrainerTower trainerTower[NUM_TOWER_CHALLENGE_TYPES];
+-    /*0x3D68*/ u8 fireredExpansion[0x98];
++    /*0x3D68*/ struct FireredSaveBlock1Extension fireredExpansion;
+ }; // size: 0x3E00
+
+--- a/include/pokemon_storage_system.h
++++ b/include/pokemon_storage_system.h
+@@
+ #define MAX_DEFAULT_WALLPAPER WALLPAPER_SAVANNA
+ 
++#define FIRERED_EXTENDED_SPECIES_CAPACITY 4096
++#define FIRERED_EXTENDED_DEX_BYTES (FIRERED_EXTENDED_SPECIES_CAPACITY / 8)
++
++struct FireredPokemonStorageExtension
++{
++    u8 dexSeen[FIRERED_EXTENDED_DEX_BYTES];
++    u8 dexCaught[FIRERED_EXTENDED_DEX_BYTES];
++    u8 reserved[0x3B0];
++}; // 0x7B0
++
+ struct PokemonStorage
+ {
+     /*0x0000*/ u8 currentBox;
+     /*0x0001*/ struct BoxPokemon boxes[TOTAL_BOXES_COUNT][IN_BOX_COUNT];
+     /*0x8344*/ u8 boxNames[TOTAL_BOXES_COUNT][BOX_NAME_LENGTH + 1];
+     /*0x83C2*/ u8 boxWallpapers[TOTAL_BOXES_COUNT];
+-    /*0x83D0*/ u8 fireredExpansion[0x7B0];
++    /*0x83D0*/ struct FireredPokemonStorageExtension fireredExpansion;
+ };
+
+--- a/src/save.c
++++ b/src/save.c
+@@
+ STATIC_ASSERT(sizeof(struct SaveBlock2) == SECTOR_DATA_SIZE, FireredSaveBlock2ExtensionAbi);
+ STATIC_ASSERT(sizeof(struct SaveBlock1) == SECTOR_DATA_SIZE * 4, FireredSaveBlock1ExtensionAbi);
+ STATIC_ASSERT(sizeof(struct PokemonStorage) == SECTOR_DATA_SIZE * 9, FireredPokemonStorageExtensionAbi);
++STATIC_ASSERT(sizeof(struct FireredSaveBlock2Extension) == 0x5C, FireredSaveBlock2ExtensionSize);
++STATIC_ASSERT(sizeof(struct FireredSaveBlock1Extension) == 0x98, FireredSaveBlock1ExtensionSize);
++STATIC_ASSERT(sizeof(struct FireredPokemonStorageExtension) == 0x7B0, FireredPokemonStorageExtensionSize);
++STATIC_ASSERT(FIRERED_EXTENDED_DEX_BYTES == 0x200, FireredExtendedDexBitsetSize);
