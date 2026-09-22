@@ -1,0 +1,176 @@
+From: FIRERED project
+Subject: [PATCH 6] Expand level-up learnsets to full 16-bit move IDs
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+Retail FireRed packs each level-up entry into one u16:
+    9 bits move + 7 bits level
+
+That caps level-up move IDs at 511 even though Pokémon move storage,
+trainer move storage, battle move variables and the public move IDs are u16.
+
+The FIRERED expanded profile has a 32 MiB ROM budget, so do not keep this
+ROM-only compression bottleneck. Store each entry as two u16 words:
+    move, level
+
+Existing level-up source declarations stay readable because LEVEL_UP_MOVE()
+still expands inside the same u16 arrays. The save format is unaffected.
+
+Increase MAX_LEVEL_UP_MOVES from 20 to 64 at the same time so later-generation
+learnsets are not silently truncated by relearn/list helper buffers.
+
+--- a/include/pokemon.h
++++ b/include/pokemon.h
+@@
+-struct __attribute__((packed)) LevelUpMove
++struct LevelUpMove
+ {
+-    u16 move:9;
+-    u16 level:7;
++    u16 move;
++    u16 level;
+ };
+
+--- a/include/constants/pokemon.h
++++ b/include/constants/pokemon.h
+@@
+-#define LEVEL_UP_MOVE_ID   0x01FF
+-#define LEVEL_UP_MOVE_LV   0xFE00
+ #define LEVEL_UP_END       0xFFFF
+-
+-#define MAX_LEVEL_UP_MOVES       20
++#define LEVEL_UP_MOVE_ENTRY_WORDS 2
++#define MAX_LEVEL_UP_MOVES       64
+
+--- a/src/data/pokemon/level_up_learnsets.h
++++ b/src/data/pokemon/level_up_learnsets.h
+@@
+-#define LEVEL_UP_MOVE(lvl, move) ((lvl << 9) | move)
++#define LEVEL_UP_MOVE(lvl, move) (move), (lvl)
+ #define LEVEL_UP_END 0xFFFF
+
+--- a/src/pokemon.c
++++ b/src/pokemon.c
+@@
+-static EWRAM_DATA u8 sLearningMoveTableID = 0;
++static EWRAM_DATA u16 sLearningMoveTableID = 0;
+@@
+ u16 MonTryLearningNewMove(struct Pokemon *mon, bool8 firstMove)
+ {
+@@
+     if (firstMove)
+     {
+         sLearningMoveTableID = 0;
+ 
+-        while ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) != (level << 9))
++        while (gLevelUpLearnsets[species][sLearningMoveTableID] != LEVEL_UP_END
++            && gLevelUpLearnsets[species][sLearningMoveTableID + 1] != level)
+         {
+-            sLearningMoveTableID++;
+-            if (gLevelUpLearnsets[species][sLearningMoveTableID] == LEVEL_UP_END)
+-                return MOVE_NONE;
++            sLearningMoveTableID += LEVEL_UP_MOVE_ENTRY_WORDS;
+         }
++
++        if (gLevelUpLearnsets[species][sLearningMoveTableID] == LEVEL_UP_END)
++            return MOVE_NONE;
+     }
+ 
+-    if ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) == (level << 9))
++    if (gLevelUpLearnsets[species][sLearningMoveTableID] != LEVEL_UP_END
++     && gLevelUpLearnsets[species][sLearningMoveTableID + 1] == level)
+     {
+-        gMoveToLearn = (gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_ID);
+-        sLearningMoveTableID++;
++        gMoveToLearn = gLevelUpLearnsets[species][sLearningMoveTableID];
++        sLearningMoveTableID += LEVEL_UP_MOVE_ENTRY_WORDS;
+         retVal = GiveMoveToMon(mon, gMoveToLearn);
+     }
+@@
+ u8 GetMoveRelearnerMoves(struct Pokemon *mon, u16 *moves)
+ {
+@@
+-    for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
++    for (i = 0; i < MAX_LEVEL_UP_MOVES * LEVEL_UP_MOVE_ENTRY_WORDS; i += LEVEL_UP_MOVE_ENTRY_WORDS)
+     {
++        u16 move;
+         u16 moveLevel;
+ 
+         if (gLevelUpLearnsets[species][i] == LEVEL_UP_END)
+             break;
+ 
+-        moveLevel = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV;
++        move = gLevelUpLearnsets[species][i];
++        moveLevel = gLevelUpLearnsets[species][i + 1];
+ 
+-        if (moveLevel <= (level << 9))
++        if (moveLevel <= level)
+         {
+-            for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); j++)
++            for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != move; j++)
+                 ;
+ 
+             if (j == MAX_MON_MOVES)
+             {
+-                for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); k++)
++                for (k = 0; k < numMoves && moves[k] != move; k++)
+                     ;
+ 
+                 if (k == numMoves)
+-                    moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
++                    moves[numMoves++] = move;
+             }
+         }
+@@
+ u8 GetLevelUpMovesBySpecies(u16 species, u16 *moves)
+ {
+     u8 numMoves = 0;
+     int i;
+ 
+-    for (i = 0; i < MAX_LEVEL_UP_MOVES && gLevelUpLearnsets[species][i] != LEVEL_UP_END; i++)
+-         moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
++    for (i = 0;
++         i < MAX_LEVEL_UP_MOVES * LEVEL_UP_MOVE_ENTRY_WORDS
++         && gLevelUpLearnsets[species][i] != LEVEL_UP_END;
++         i += LEVEL_UP_MOVE_ENTRY_WORDS)
++        moves[numMoves++] = gLevelUpLearnsets[species][i];
+ 
+-     return numMoves;
++    return numMoves;
+ }
+@@
+ u8 GetNumberOfRelearnableMoves(struct Pokemon *mon)
+ {
+@@
+-    for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
++    for (i = 0; i < MAX_LEVEL_UP_MOVES * LEVEL_UP_MOVE_ENTRY_WORDS; i += LEVEL_UP_MOVE_ENTRY_WORDS)
+     {
++        u16 move;
+         u16 moveLevel;
+ 
+         if (gLevelUpLearnsets[species][i] == LEVEL_UP_END)
+             break;
+ 
+-        moveLevel = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV;
++        move = gLevelUpLearnsets[species][i];
++        moveLevel = gLevelUpLearnsets[species][i + 1];
+ 
+-        if (moveLevel <= (level << 9))
++        if (moveLevel <= level)
+         {
+-            for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); j++)
++            for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != move; j++)
+                 ;
+ 
+             if (j == MAX_MON_MOVES)
+             {
+-                for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); k++)
++                for (k = 0; k < numMoves && moves[k] != move; k++)
+                     ;
+ 
+                 if (k == numMoves)
+-                    moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
++                    moves[numMoves++] = move;
+             }
+         }
