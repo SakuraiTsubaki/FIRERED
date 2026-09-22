@@ -44,23 +44,6 @@ jobs:
           ref: c75f352304d529f6ba92d4f74b9cf8b5c3810788
           path: upstream
 
-      - name: Checkout agbcc
-        uses: actions/checkout@v4
-        with:
-          repository: pret/agbcc
-          path: upstream/agbcc
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
-
-      - name: Install agbcc
-        working-directory: upstream/agbcc
-        run: |
-          ./build.sh
-          ./install.sh ../
-
       - name: Apply Gen10 foundation patches
         run: |
           set -eux
@@ -86,6 +69,23 @@ jobs:
           grep -R "FIRERED_EXTENDED_SPECIES_CAPACITY 4096" upstream/include/pokemon_storage_system.h
           grep -R "u16 abilities\[NUM_ABILITY_SLOTS\]" upstream/include/pokemon.h
           grep -R "ROM_PAD_TO := 0x0A000000" upstream/Makefile
+
+      - name: Checkout agbcc
+        uses: actions/checkout@v4
+        with:
+          repository: pret/agbcc
+          path: upstream/agbcc
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
+
+      - name: Install agbcc
+        working-directory: upstream/agbcc
+        run: |
+          ./build.sh
+          ./install.sh ../
 
       - name: Build 32 MiB FIRERED expanded profile
         working-directory: upstream
