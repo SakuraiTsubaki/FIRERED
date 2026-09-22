@@ -1,0 +1,159 @@
+From: FIRERED project
+Subject: [PATCH 10] Reuse BoxPokemon separator word for modern per-mon metadata
+
+Applies after:
+    patches/0009-wide-ability-ids.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+Retail BoxPokemon has a u16 field named "unknown" exposed as
+MON_DATA_ENCRYPT_SEPARATOR. Source inspection shows no gameplay read of this
+field; it sits outside the encrypted 48-byte PokemonSubstruct payload and
+outside CalculateBoxMonChecksum(), which sums only the four encrypted
+substructs.
+
+Use this existing 16-bit word as a FireRed extension metadata word instead of
+growing the 80-byte BoxPokemon ABI or maintaining fragile position sidecars.
+
+Legacy compatibility:
+- retail saves normally have zero in this field;
+- zero means original ability slot high bit = 0 and Poké Ball high bits = 0;
+- the original abilityNum low bit and 4-bit Poké Ball value remain in their
+  original locations;
+- the BoxPokemon size remains exactly 80 bytes.
+
+Allocated bits:
+  bit 0      ability slot high bit (0..3 total; slot 3 reserved)
+  bits 1..2  Poké Ball high bits (0..63 total)
+  bits 3..8  reserved for 6-bit modern type metadata (e.g. Tera type)
+  bit 9      reserved for one boolean modern battle metadata flag
+  bits 10..15 reserved for six per-stat modern metadata bits
+
+Only ability slot and Poké Ball are wired by this patch. The remaining bits
+are reservations, not form-change implementation.
+
+--- a/include/pokemon.h
++++ b/include/pokemon.h
+@@
+ struct BoxPokemon
+ {
+@@
+     u8 otName[PLAYER_NAME_LENGTH];
+     u8 markings;
+     u16 checksum;
+-    u16 unknown;
++    u16 extensionData;
+     union PokemonSubstruct secure;
+ };
++
++#define BOXMON_EXT_ABILITY_SLOT_HIGH_SHIFT 0
++#define BOXMON_EXT_ABILITY_SLOT_HIGH_MASK  (1 << BOXMON_EXT_ABILITY_SLOT_HIGH_SHIFT)
++#define BOXMON_EXT_POKEBALL_HIGH_SHIFT     1
++#define BOXMON_EXT_POKEBALL_HIGH_MASK      (3 << BOXMON_EXT_POKEBALL_HIGH_SHIFT)
++#define BOXMON_EXT_MODERN_TYPE_SHIFT       3
++#define BOXMON_EXT_MODERN_TYPE_MASK        (0x3F << BOXMON_EXT_MODERN_TYPE_SHIFT)
++#define BOXMON_EXT_MODERN_FLAG_SHIFT       9
++#define BOXMON_EXT_MODERN_FLAG_MASK        (1 << BOXMON_EXT_MODERN_FLAG_SHIFT)
++#define BOXMON_EXT_STAT_FLAGS_SHIFT        10
++#define BOXMON_EXT_STAT_FLAGS_MASK         (0x3F << BOXMON_EXT_STAT_FLAGS_SHIFT)
+@@
+ struct BattlePokemon
+ {
+@@
+     /*0x15*/ u32 defenseIV:5;
+     /*0x15*/ u32 speedIV:5;
+     /*0x16*/ u32 spAttackIV:5;
+     /*0x17*/ u32 spDefenseIV:5;
+-    /*0x17*/ u32 isEgg:1;
+-    /*0x17*/ u32 abilityNum:1;
++    /*0x17*/ u32 abilityNum:2;
+     /*0x18*/ s8 statStages[NUM_BATTLE_STATS];
+
+--- a/src/pokemon.c
++++ b/src/pokemon.c
+@@
+     case MON_DATA_ENCRYPT_SEPARATOR:
+-        retVal = boxMon->unknown;
++        retVal = boxMon->extensionData;
+         break;
+@@
+     case MON_DATA_POKEBALL:
+-        retVal = substruct3->pokeball;
++        retVal = substruct3->pokeball
++               | (((boxMon->extensionData & BOXMON_EXT_POKEBALL_HIGH_MASK)
++                    >> BOXMON_EXT_POKEBALL_HIGH_SHIFT) << 4);
+         break;
+@@
+     case MON_DATA_ABILITY_NUM:
+-        retVal = substruct3->abilityNum;
++        retVal = substruct3->abilityNum
++               | (((boxMon->extensionData & BOXMON_EXT_ABILITY_SLOT_HIGH_MASK)
++                    >> BOXMON_EXT_ABILITY_SLOT_HIGH_SHIFT) << 1);
+         break;
+@@
+     case MON_DATA_ENCRYPT_SEPARATOR:
+-        SET16(boxMon->unknown);
++        SET16(boxMon->extensionData);
+         break;
+@@
+     case MON_DATA_POKEBALL:
+     {
+         u8 pokeball = *data;
+-        substruct3->pokeball = pokeball;
++        substruct3->pokeball = pokeball & 0xF;
++        boxMon->extensionData =
++            (boxMon->extensionData & ~BOXMON_EXT_POKEBALL_HIGH_MASK)
++          | (((pokeball >> 4) & 0x3) << BOXMON_EXT_POKEBALL_HIGH_SHIFT);
+         break;
+     }
+@@
+     case MON_DATA_ABILITY_NUM:
+-        SET8(substruct3->abilityNum);
++    {
++        u8 abilityNum = *data;
++        substruct3->abilityNum = abilityNum & 1;
++        boxMon->extensionData =
++            (boxMon->extensionData & ~BOXMON_EXT_ABILITY_SLOT_HIGH_MASK)
++          | (((abilityNum >> 1) & 1) << BOXMON_EXT_ABILITY_SLOT_HIGH_SHIFT);
+         break;
++    }
+@@
+-    gBattleMons[battlerId].isEgg = GetMonData(&gPlayerParty[partyIndex], MON_DATA_IS_EGG, NULL);
+     gBattleMons[battlerId].abilityNum = GetMonData(&gPlayerParty[partyIndex], MON_DATA_ABILITY_NUM, NULL);
+
+--- a/src/battle_controller_player.c
++++ b/src/battle_controller_player.c
+@@
+-        battleMon.isEgg = GetMonData(&gPlayerParty[monId], MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(&gPlayerParty[monId], MON_DATA_ABILITY_NUM);
+
+--- a/src/battle_controller_opponent.c
++++ b/src/battle_controller_opponent.c
+@@
+-        battleMon.isEgg = GetMonData(&gEnemyParty[monId], MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(&gEnemyParty[monId], MON_DATA_ABILITY_NUM);
+
+--- a/src/battle_controller_pokedude.c
++++ b/src/battle_controller_pokedude.c
+@@
+-        battleMon.isEgg = GetMonData(mon, MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM);
+
+--- a/src/battle_controller_oak_old_man.c
++++ b/src/battle_controller_oak_old_man.c
+@@
+-        battleMon.isEgg = GetMonData(&gPlayerParty[monId], MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(&gPlayerParty[monId], MON_DATA_ABILITY_NUM);
+
+--- a/src/battle_controller_link_partner.c
++++ b/src/battle_controller_link_partner.c
+@@
+-        battleMon.isEgg = GetMonData(&gPlayerParty[monId], MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(&gPlayerParty[monId], MON_DATA_ABILITY_NUM);
+
+--- a/src/battle_controller_link_opponent.c
++++ b/src/battle_controller_link_opponent.c
+@@
+-        battleMon.isEgg = GetMonData(&gEnemyParty[monId], MON_DATA_IS_EGG);
+         battleMon.abilityNum = GetMonData(&gEnemyParty[monId], MON_DATA_ABILITY_NUM);
