@@ -11,6 +11,7 @@ on:
       - "patches/0008-*.patch"
       - "patches/0009-*.patch"
       - "patches/0010-*.patch"
+      - "patches/0011-*.patch"
       - "tools/audit_gen10_widths.py"
       - "tools/apply_context_patch.py"
       - ".github/workflows/gen10-expansion.yml"
@@ -54,7 +55,8 @@ jobs:
             patches/0007-gen10-save-schema.patch \
             patches/0008-extended-dex-flags.patch \
             patches/0009-wide-ability-ids.patch \
-            patches/0010-boxmon-modern-metadata.patch
+            patches/0010-boxmon-modern-metadata.patch \
+            patches/0011-auxiliary-ability-slots.patch
           git -C upstream diff --check
 
       - name: Run width audit
