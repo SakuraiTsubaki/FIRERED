@@ -14,6 +14,7 @@ on:
       - "patches/0011-*.patch"
       - "patches/0012-*.patch"
       - "patches/0013-*.patch"
+      - "patches/0014-*.patch"
       - "tools/audit_gen10_widths.py"
       - "tools/apply_context_patch.py"
       - ".github/workflows/gen10-expansion.yml"
@@ -60,7 +61,8 @@ jobs:
             patches/0010-boxmon-modern-metadata.patch \
             patches/0011-auxiliary-ability-slots.patch \
             patches/0012-wide-battle-script-ability-operands.patch \
-            patches/0013-decouple-retail-dex-storage.patch
+            patches/0013-decouple-retail-dex-storage.patch \
+            patches/0014-freeze-legacy-unown-ids.patch
           git -C upstream diff --check
 
       - name: Run width audit
@@ -75,6 +77,7 @@ jobs:
           grep -R "FIRERED_EXTENDED_SPECIES_CAPACITY 4096" upstream/include/pokemon_storage_system.h
           grep -R "FIRERED_RETAIL_DEX_FLAGS_NO 0x34" upstream/include/global.h
           grep -R "FIRERED_RETAIL_NATIONAL_DEX_COUNT NATIONAL_DEX_DEOXYS" upstream/include/global.h
+          grep -R "FIRERED_EXPANDED_SPECIES_START (SPECIES_UNOWN_QMARK + 1)" upstream/include/constants/species.h
           grep -R "u16 abilities\[NUM_ABILITY_SLOTS\]" upstream/include/pokemon.h
           grep -R "ROM_PAD_TO := 0x0A000000" upstream/Makefile
 
