@@ -36,15 +36,13 @@ are reservations, not form-change implementation.
 --- a/include/pokemon.h
 +++ b/include/pokemon.h
 @@
- struct BoxPokemon
- {
-@@
      u8 otName[PLAYER_NAME_LENGTH];
      u8 markings;
      u16 checksum;
 -    u16 unknown;
 +    u16 extensionData;
-     union PokemonSubstruct secure;
+@@
+     } secure;
  };
 +
 +#define BOXMON_EXT_ABILITY_SLOT_HIGH_SHIFT 0
@@ -57,11 +55,9 @@ are reservations, not form-change implementation.
 +#define BOXMON_EXT_MODERN_FLAG_MASK        (1 << BOXMON_EXT_MODERN_FLAG_SHIFT)
 +#define BOXMON_EXT_STAT_FLAGS_SHIFT        10
 +#define BOXMON_EXT_STAT_FLAGS_MASK         (0x3F << BOXMON_EXT_STAT_FLAGS_SHIFT)
+ 
+ struct Pokemon
 @@
- struct BattlePokemon
- {
-@@
-     /*0x15*/ u32 defenseIV:5;
      /*0x15*/ u32 speedIV:5;
      /*0x16*/ u32 spAttackIV:5;
      /*0x17*/ u32 spDefenseIV:5;
