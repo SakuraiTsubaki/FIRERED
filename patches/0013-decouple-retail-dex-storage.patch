@@ -1,0 +1,41 @@
+From: FIRERED project
+Subject: [PATCH 13] Decouple retail Pokédex storage from expanded species count
+
+Applies after:
+    patches/0007-gen10-save-schema.patch
+    patches/0008-extended-dex-flags.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+Retail FireRed derives DEX_FLAGS_NO from NUM_SPECIES. That is harmless while
+NUM_SPECIES is 412, but it becomes a save-ABI bug as soon as later-generation
+species are added: Pokedex.owned/seen and SaveBlock1 seen1/seen2 would grow,
+moving every following save field.
+
+Freeze the native storage at the exact retail footprint:
+    DEX_FLAGS_NO = 0x34 = 52 bytes
+
+Also separate the native National Dex boundary (Deoxys / 386) from the logical
+NATIONAL_DEX_COUNT. The latter is expected to grow when later-generation
+species are imported. Only IDs 1..386 may touch the retail anti-cheat arrays;
+387..4096 use the extension bitsets introduced by patches 0007/0008.
+
+--- a/include/global.h
++++ b/include/global.h
+@@
+ #define ROUND_BITS_TO_BYTES(numBits) DIV_ROUND_UP(numBits, 8)
+ 
+-#define DEX_FLAGS_NO ROUND_BITS_TO_BYTES(NUM_SPECIES)
++#define FIRERED_RETAIL_DEX_FLAGS_NO 0x34
++#define FIRERED_RETAIL_NATIONAL_DEX_COUNT NATIONAL_DEX_DEOXYS
++#define DEX_FLAGS_NO FIRERED_RETAIL_DEX_FLAGS_NO
+ #define NUM_FLAG_BYTES ROUND_BITS_TO_BYTES(FLAGS_COUNT)
+ #define NUM_ADDITIONAL_PHRASE_BYTES ROUND_BITS_TO_BYTES(NUM_ADDITIONAL_PHRASES)
+
+--- a/src/pokedex_screen.c
++++ b/src/pokedex_screen.c
+@@
+-    if (nationalDexNo > NATIONAL_DEX_COUNT)
++    if (nationalDexNo > FIRERED_RETAIL_NATIONAL_DEX_COUNT)
+         return FireredExtendedDexGetSetFlag(nationalDexNo, caseId);
