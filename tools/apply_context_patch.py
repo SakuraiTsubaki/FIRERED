@@ -17,7 +17,7 @@ def parse_patch(text: str):
     def finish_hunk():
         nonlocal hunk
         if hunk is not None:
-            if not hunk["old"] and not hunk["new"]:
+            if not hunk["lines"]:
                 raise PatchError(f"empty hunk for {hunk['path']}")
             hunks.append(hunk)
             hunk = None
@@ -34,28 +34,48 @@ def parse_patch(text: str):
             finish_hunk()
             if current_path is None:
                 raise PatchError("hunk before file header")
-            hunk = {"path": current_path, "old": [], "new": []}
+            hunk = {"path": current_path, "lines": []}
             continue
         if hunk is None:
             continue
 
         if raw.startswith("+"):
-            hunk["new"].append(raw[1:])
+            hunk["lines"].append(("+", raw[1:]))
         elif raw.startswith("-"):
-            hunk["old"].append(raw[1:])
+            hunk["lines"].append(("-", raw[1:]))
         elif raw.startswith(" "):
-            hunk["old"].append(raw[1:])
-            hunk["new"].append(raw[1:])
+            # Most files use standard unified-diff context, where the first
+            # space is a marker. Some early FIRERED project patches instead
+            # stored indented source lines literally, with no extra marker.
+            # Preserve both forms and resolve uniquely at apply time.
+            hunk["lines"].append((" ", raw))
         elif line == "":
-            # Bare blank lines in the project patch format are context lines.
-            hunk["old"].append(raw)
-            hunk["new"].append(raw)
+            hunk["lines"].append((" ", raw))
         else:
-            # Metadata between file blocks is ignored.
             finish_hunk()
 
     finish_hunk()
     return hunks
+
+
+def build_variant(lines, literal_context: bool):
+    old_parts = []
+    new_parts = []
+    for op, raw in lines:
+        if op == "+":
+            new_parts.append(raw)
+        elif op == "-":
+            old_parts.append(raw)
+        else:
+            if raw == "\n":
+                ctx = raw
+            elif literal_context:
+                ctx = raw
+            else:
+                ctx = raw[1:]
+            old_parts.append(ctx)
+            new_parts.append(ctx)
+    return "".join(old_parts), "".join(new_parts)
 
 
 def apply_hunks(root: Path, patch_path: Path, check_only: bool) -> None:
@@ -67,17 +87,34 @@ def apply_hunks(root: Path, patch_path: Path, check_only: bool) -> None:
         if path not in staged:
             staged[path] = path.read_text(encoding="utf-8")
 
-        old = "".join(hunk["old"])
-        new = "".join(hunk["new"])
         data = staged[path]
+        candidates = []
+        for literal_context in (False, True):
+            old, new = build_variant(hunk["lines"], literal_context)
+            pair = (old, new)
+            if pair not in candidates:
+                candidates.append(pair)
 
-        count = data.count(old)
-        if count != 1:
-            preview = old[:240].replace("\n", "\\n")
+        chosen = None
+        diagnostics = []
+        for old, new in candidates:
+            count = data.count(old)
+            diagnostics.append((count, old))
+            if count == 1:
+                chosen = (old, new)
+                break
+
+        if chosen is None:
+            detail = "; ".join(
+                f"variant{n + 1} matched {count} times old={old[:220].replace(chr(10), '<NL>')!r}"
+                for n, (count, old) in enumerate(diagnostics)
+            )
             raise PatchError(
                 f"{patch_path.name}: hunk {hunk_no} for {hunk['path']} "
-                f"matched {count} times; expected exactly once; old={preview!r}"
+                f"did not match uniquely; {detail}"
             )
+
+        old, new = chosen
         staged[path] = data.replace(old, new, 1)
 
     if not check_only:
