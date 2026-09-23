@@ -32,13 +32,13 @@ same four-byte region.
 --- a/include/pokemon.h
 +++ b/include/pokemon.h
 @@
--    /*0x16*/ u8 abilities[2];
--    /*0x18*/ u8 safariZoneFleeRate;
--    /*0x19*/ u8 bodyColor : 7;
-+    /*expanded*/ u16 abilities[NUM_ABILITY_SLOTS];
-+    u8 safariZoneFleeRate;
-+    u8 bodyColor : 7;
-             u8 noFlip : 1;
+- /* 0x16 */ u8 abilities[2];
+- /* 0x18 */ u8 safariZoneFleeRate;
+- /* 0x19 */ u8 bodyColor : 7;
++ /* expanded */ u16 abilities[NUM_ABILITY_SLOTS];
++ u8 safariZoneFleeRate;
++ u8 bodyColor : 7;
+            u8 noFlip : 1;
 @@
 -    /*0x20*/ u8 ability;
 -    /*0x21*/ u8 type1;
