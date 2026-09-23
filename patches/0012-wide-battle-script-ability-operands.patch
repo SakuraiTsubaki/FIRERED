@@ -46,40 +46,112 @@ reassembled naturally with the widened command lengths.
 --- a/src/battle_script_commands.c
 +++ b/src/battle_script_commands.c
 @@
- static void Cmd_jumpifability(void)
- {
-     u8 battlerId;
+-static void Cmd_jumpifability(void)
+-{
+-    u8 battlerId;
 -    u8 ability = gBattlescriptCurrInstr[2];
 -    const u8 *jumpPtr = T2_READ_PTR(gBattlescriptCurrInstr + 3);
+-
+-    if (gBattlescriptCurrInstr[1] == BS_ATTACKER_SIDE)
+-    {
+-        battlerId = AbilityBattleEffects(ABILITYEFFECT_CHECK_BATTLER_SIDE, gBattlerAttacker, ability, 0, 0);
+-        if (battlerId)
+-        {
+-            gLastUsedAbility = ability;
+-            gBattlescriptCurrInstr = jumpPtr;
+-            RecordAbilityBattle(battlerId - 1, gLastUsedAbility);
+-            gBattleScripting.battlerWithAbility = battlerId - 1;
+-        }
+-        else
+-            gBattlescriptCurrInstr += 7;
+-    }
+-    else if (gBattlescriptCurrInstr[1] == BS_NOT_ATTACKER_SIDE)
+-    {
+-        battlerId = AbilityBattleEffects(ABILITYEFFECT_CHECK_OTHER_SIDE, gBattlerAttacker, ability, 0, 0);
+-        if (battlerId)
+-        {
+-            gLastUsedAbility = ability;
+-            gBattlescriptCurrInstr = jumpPtr;
+-            RecordAbilityBattle(battlerId - 1, gLastUsedAbility);
+-            gBattleScripting.battlerWithAbility = battlerId - 1;
+-        }
+-        else
+-            gBattlescriptCurrInstr += 7;
+-    }
+-    else
+-    {
+-        battlerId = GetBattlerForBattleScript(gBattlescriptCurrInstr[1]);
+-        if (gBattleMons[battlerId].ability == ability)
+-        {
+-            gLastUsedAbility = ability;
+-            gBattlescriptCurrInstr = jumpPtr;
+-            RecordAbilityBattle(battlerId, gLastUsedAbility);
+-            gBattleScripting.battlerWithAbility = battlerId;
+-        }
+-        else
+-            gBattlescriptCurrInstr += 7;
+-    }
+-}
++static void Cmd_jumpifability(void)
++{
++    u8 battlerId;
 +    u16 ability = T1_READ_16(gBattlescriptCurrInstr + 2);
 +    const u8 *jumpPtr = T2_READ_PTR(gBattlescriptCurrInstr + 4);
-@@
-         }
-         else
--            gBattlescriptCurrInstr += 7;
++
++    if (gBattlescriptCurrInstr[1] == BS_ATTACKER_SIDE)
++    {
++        battlerId = AbilityBattleEffects(ABILITYEFFECT_CHECK_BATTLER_SIDE, gBattlerAttacker, ability, 0, 0);
++        if (battlerId)
++        {
++            gLastUsedAbility = ability;
++            gBattlescriptCurrInstr = jumpPtr;
++            RecordAbilityBattle(battlerId - 1, gLastUsedAbility);
++            gBattleScripting.battlerWithAbility = battlerId - 1;
++        }
++        else
 +            gBattlescriptCurrInstr += 8;
-@@
-         }
-         else
--            gBattlescriptCurrInstr += 7;
++    }
++    else if (gBattlescriptCurrInstr[1] == BS_NOT_ATTACKER_SIDE)
++    {
++        battlerId = AbilityBattleEffects(ABILITYEFFECT_CHECK_OTHER_SIDE, gBattlerAttacker, ability, 0, 0);
++        if (battlerId)
++        {
++            gLastUsedAbility = ability;
++            gBattlescriptCurrInstr = jumpPtr;
++            RecordAbilityBattle(battlerId - 1, gLastUsedAbility);
++            gBattleScripting.battlerWithAbility = battlerId - 1;
++        }
++        else
 +            gBattlescriptCurrInstr += 8;
-@@
-         }
-         else
--            gBattlescriptCurrInstr += 7;
++    }
++    else
++    {
++        battlerId = GetBattlerForBattleScript(gBattlescriptCurrInstr[1]);
++        if (gBattleMons[battlerId].ability == ability)
++        {
++            gLastUsedAbility = ability;
++            gBattlescriptCurrInstr = jumpPtr;
++            RecordAbilityBattle(battlerId, gLastUsedAbility);
++            gBattleScripting.battlerWithAbility = battlerId;
++        }
++        else
 +            gBattlescriptCurrInstr += 8;
-     }
- }
- 
- static void Cmd_jumpifabilitypresent(void)
- {
++    }
++}
+@@
+-static void Cmd_jumpifabilitypresent(void)
+-{
 -    if (AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, 0, gBattlescriptCurrInstr[1], 0, 0))
 -        gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 2);
+-    else
+-        gBattlescriptCurrInstr += 6;
+-}
++static void Cmd_jumpifabilitypresent(void)
++{
 +    u16 ability = T1_READ_16(gBattlescriptCurrInstr + 1);
 +
 +    if (AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, 0, ability, 0, 0))
 +        gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 3);
-     else
--        gBattlescriptCurrInstr += 6;
++    else
 +        gBattlescriptCurrInstr += 7;
- }
++}
