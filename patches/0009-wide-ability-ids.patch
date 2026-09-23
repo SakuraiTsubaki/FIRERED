@@ -232,9 +232,24 @@ same four-byte region.
 --- a/src/battle_ai_switch_items.c
 +++ b/src/battle_ai_switch_items.c
 @@
+     if (gBattleMons[gActiveBattler].ability == absorbingTypeAbility)
+         return FALSE;
+     for (i = 0; i < PARTY_SIZE; ++i)
+     {
+         u16 species;
 -        u8 monAbility;
 +        u16 monAbility;
 @@
+ static bool8 FindMonWithFlagsAndSuperEffective(u8 flags, u8 moduloPercent)
+ {
+     u8 battlerIn1, battlerIn2;
+     s32 i, j;
+     u16 move;
+     u8 moveFlags;
+@@
+     for (i = 0; i < PARTY_SIZE; ++i)
+     {
+         u16 species;
 -        u8 monAbility;
 +        u16 monAbility;
 
