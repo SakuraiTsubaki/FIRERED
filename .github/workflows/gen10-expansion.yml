@@ -91,5 +91,5 @@ jobs:
         working-directory: upstream
         run: |
           make -j"$(nproc)" all
-          test "$(stat -c%s pokefirered.gba)" -eq 33554432
-          echo "Expanded ROM size: $(stat -c%s pokefirered.gba) bytes"
+          test "$(stat -c%s pokefirered_modern.gba)" -eq 33554432
+          echo "Expanded ROM size: $(stat -c%s pokefirered_modern.gba) bytes"
