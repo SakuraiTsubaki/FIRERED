@@ -1,0 +1,85 @@
+From: FIRERED project
+Subject: [PATCH 12] Widen battle-script ability operands to 16 bits
+
+Applies after:
+    patches/0009-wide-ability-ids.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+The global ability runtime is 16-bit after patch 0009, but two battle-script
+commands still encode an ability ID as one byte:
+
+    jumpifability
+    jumpifabilitypresent
+
+That would silently truncate any ability ID above 255. Widen only these ability
+operands; opcode numbers and pointer widths remain unchanged.
+
+New layouts:
+    jumpifability:
+        opcode:u8, battler:u8, ability:u16, ptr:u32 = 8 bytes
+    jumpifabilitypresent:
+        opcode:u8, ability:u16, ptr:u32 = 7 bytes
+
+All existing scripts use the macros below, so their labels/pointers are
+reassembled naturally with the widened command lengths.
+
+--- a/asm/macros/battle_script.inc
++++ b/asm/macros/battle_script.inc
+@@
+ 	.macro jumpifability param0:req, ability:req, ptr:req
+ 	.byte 0x1e
+ 	.byte \param0
+-	.byte \ability
++	.2byte \ability
+ 	.4byte \ptr
+ 	.endm
+@@
+ 	.macro jumpifabilitypresent ability:req, ptr:req
+ 	.byte 0x43
+-	.byte \ability
++	.2byte \ability
+ 	.4byte \ptr
+ 	.endm
+
+--- a/src/battle_script_commands.c
++++ b/src/battle_script_commands.c
+@@
+ static void Cmd_jumpifability(void)
+ {
+     u8 battlerId;
+-    u8 ability = gBattlescriptCurrInstr[2];
+-    const u8 *jumpPtr = T2_READ_PTR(gBattlescriptCurrInstr + 3);
++    u16 ability = T1_READ_16(gBattlescriptCurrInstr + 2);
++    const u8 *jumpPtr = T2_READ_PTR(gBattlescriptCurrInstr + 4);
+@@
+         }
+         else
+-            gBattlescriptCurrInstr += 7;
++            gBattlescriptCurrInstr += 8;
+@@
+         }
+         else
+-            gBattlescriptCurrInstr += 7;
++            gBattlescriptCurrInstr += 8;
+@@
+         }
+         else
+-            gBattlescriptCurrInstr += 7;
++            gBattlescriptCurrInstr += 8;
+     }
+ }
+ 
+ static void Cmd_jumpifabilitypresent(void)
+ {
+-    if (AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, 0, gBattlescriptCurrInstr[1], 0, 0))
+-        gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 2);
++    u16 ability = T1_READ_16(gBattlescriptCurrInstr + 1);
++
++    if (AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, 0, ability, 0, 0))
++        gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 3);
+     else
+-        gBattlescriptCurrInstr += 6;
++        gBattlescriptCurrInstr += 7;
+ }
