@@ -27,6 +27,7 @@ same four-byte region.
  #define MAX_MON_MOVES 4
 +#define NUM_ABILITY_SLOTS 3
  #define PARTY_SIZE 6
+ #define MULTI_PARTY_SIZE (PARTY_SIZE / 2)
 
 --- a/include/pokemon.h
 +++ b/include/pokemon.h
