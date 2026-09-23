@@ -22,7 +22,8 @@ def parse_patch(text: str):
             hunks.append(hunk)
             hunk = None
 
-    for raw in text.splitlines(keepends=True):
+    raw_lines = text.splitlines(keepends=True)
+    for line_index, raw in enumerate(raw_lines):
         line = raw.rstrip("\n")
         if line.startswith("--- a/"):
             finish_hunk()
@@ -50,7 +51,11 @@ def parse_patch(text: str):
             # Preserve both forms and resolve uniquely at apply time.
             hunk["lines"].append((" ", raw))
         elif line == "":
-            hunk["lines"].append((" ", raw))
+            next_line = raw_lines[line_index + 1] if line_index + 1 < len(raw_lines) else ""
+            if next_line.startswith("@@") or next_line.startswith("--- a/") or next_line == "":
+                finish_hunk()
+            else:
+                hunk["lines"].append((" ", raw))
         else:
             finish_hunk()
 
