@@ -1,0 +1,108 @@
+From: FIRERED project
+Subject: [PATCH 14] Freeze legacy Unown form IDs before species expansion
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+FireRed stores Unown B through ? as graphics/form-only species IDs immediately
+above the retail NUM_SPECIES boundary. Defining those IDs as NUM_SPECIES + n
+makes them move when NUM_SPECIES is increased for later generations.
+
+Freeze the legacy range at its retail values instead:
+
+    retail NUM_SPECIES / SPECIES_EGG = 412
+    Unown B..? = 413..439
+    first safe expanded regular species ID = 440
+
+Current retail values do not change. Future species imports must reserve
+412..439 for Egg and the legacy Unown form slots and begin new regular species
+at FIRERED_EXPANDED_SPECIES_START.
+
+--- a/include/constants/species.h
++++ b/include/constants/species.h
+@@
+ #define SPECIES_CHIMECHO 411
+ #define SPECIES_EGG 412
+ 
+-#define NUM_SPECIES SPECIES_EGG
+-
+-#define SPECIES_UNOWN_B (NUM_SPECIES + 1)
+-#define SPECIES_UNOWN_C (NUM_SPECIES + 2)
+-#define SPECIES_UNOWN_D (NUM_SPECIES + 3)
+-#define SPECIES_UNOWN_E (NUM_SPECIES + 4)
+-#define SPECIES_UNOWN_F (NUM_SPECIES + 5)
+-#define SPECIES_UNOWN_G (NUM_SPECIES + 6)
+-#define SPECIES_UNOWN_H (NUM_SPECIES + 7)
+-#define SPECIES_UNOWN_I (NUM_SPECIES + 8)
+-#define SPECIES_UNOWN_J (NUM_SPECIES + 9)
+-#define SPECIES_UNOWN_K (NUM_SPECIES + 10)
+-#define SPECIES_UNOWN_L (NUM_SPECIES + 11)
+-#define SPECIES_UNOWN_M (NUM_SPECIES + 12)
+-#define SPECIES_UNOWN_N (NUM_SPECIES + 13)
+-#define SPECIES_UNOWN_O (NUM_SPECIES + 14)
+-#define SPECIES_UNOWN_P (NUM_SPECIES + 15)
+-#define SPECIES_UNOWN_Q (NUM_SPECIES + 16)
+-#define SPECIES_UNOWN_R (NUM_SPECIES + 17)
+-#define SPECIES_UNOWN_S (NUM_SPECIES + 18)
+-#define SPECIES_UNOWN_T (NUM_SPECIES + 19)
+-#define SPECIES_UNOWN_U (NUM_SPECIES + 20)
+-#define SPECIES_UNOWN_V (NUM_SPECIES + 21)
+-#define SPECIES_UNOWN_W (NUM_SPECIES + 22)
+-#define SPECIES_UNOWN_X (NUM_SPECIES + 23)
+-#define SPECIES_UNOWN_Y (NUM_SPECIES + 24)
+-#define SPECIES_UNOWN_Z (NUM_SPECIES + 25)
+-#define SPECIES_UNOWN_EMARK (NUM_SPECIES + 26)
+-#define SPECIES_UNOWN_QMARK (NUM_SPECIES + 27)
++#define FIRERED_RETAIL_NUM_SPECIES SPECIES_EGG
++#define NUM_SPECIES FIRERED_RETAIL_NUM_SPECIES
++
++#define SPECIES_UNOWN_B (FIRERED_RETAIL_NUM_SPECIES + 1)
++#define SPECIES_UNOWN_C (FIRERED_RETAIL_NUM_SPECIES + 2)
++#define SPECIES_UNOWN_D (FIRERED_RETAIL_NUM_SPECIES + 3)
++#define SPECIES_UNOWN_E (FIRERED_RETAIL_NUM_SPECIES + 4)
++#define SPECIES_UNOWN_F (FIRERED_RETAIL_NUM_SPECIES + 5)
++#define SPECIES_UNOWN_G (FIRERED_RETAIL_NUM_SPECIES + 6)
++#define SPECIES_UNOWN_H (FIRERED_RETAIL_NUM_SPECIES + 7)
++#define SPECIES_UNOWN_I (FIRERED_RETAIL_NUM_SPECIES + 8)
++#define SPECIES_UNOWN_J (FIRERED_RETAIL_NUM_SPECIES + 9)
++#define SPECIES_UNOWN_K (FIRERED_RETAIL_NUM_SPECIES + 10)
++#define SPECIES_UNOWN_L (FIRERED_RETAIL_NUM_SPECIES + 11)
++#define SPECIES_UNOWN_M (FIRERED_RETAIL_NUM_SPECIES + 12)
++#define SPECIES_UNOWN_N (FIRERED_RETAIL_NUM_SPECIES + 13)
++#define SPECIES_UNOWN_O (FIRERED_RETAIL_NUM_SPECIES + 14)
++#define SPECIES_UNOWN_P (FIRERED_RETAIL_NUM_SPECIES + 15)
++#define SPECIES_UNOWN_Q (FIRERED_RETAIL_NUM_SPECIES + 16)
++#define SPECIES_UNOWN_R (FIRERED_RETAIL_NUM_SPECIES + 17)
++#define SPECIES_UNOWN_S (FIRERED_RETAIL_NUM_SPECIES + 18)
++#define SPECIES_UNOWN_T (FIRERED_RETAIL_NUM_SPECIES + 19)
++#define SPECIES_UNOWN_U (FIRERED_RETAIL_NUM_SPECIES + 20)
++#define SPECIES_UNOWN_V (FIRERED_RETAIL_NUM_SPECIES + 21)
++#define SPECIES_UNOWN_W (FIRERED_RETAIL_NUM_SPECIES + 22)
++#define SPECIES_UNOWN_X (FIRERED_RETAIL_NUM_SPECIES + 23)
++#define SPECIES_UNOWN_Y (FIRERED_RETAIL_NUM_SPECIES + 24)
++#define SPECIES_UNOWN_Z (FIRERED_RETAIL_NUM_SPECIES + 25)
++#define SPECIES_UNOWN_EMARK (FIRERED_RETAIL_NUM_SPECIES + 26)
++#define SPECIES_UNOWN_QMARK (FIRERED_RETAIL_NUM_SPECIES + 27)
++
++#define FIRERED_EXPANDED_SPECIES_START (SPECIES_UNOWN_QMARK + 1)
+ 
+ #endif  // GUARD_CONSTANTS_SPECIES_H
+
+--- a/src/battle_main.c
++++ b/src/battle_main.c
+@@
+         if (unownForm == 0)
+             unownSpecies = SPECIES_UNOWN;  // Use the A Unown form.
+         else
+-            unownSpecies = NUM_SPECIES + unownForm;  // Use one of the other Unown letters.
++            unownSpecies = SPECIES_UNOWN_B + unownForm - 1;  // Use one of the other Unown letters.
+
+--- a/src/menu2.c
++++ b/src/menu2.c
+@@
+ // Not actually "old" given these were introduced in Gen 3,
+ // but they're used as equivalents here alongside the other OLD_UNOWN
+-#define SPECIES_OLD_UNOWN_EMARK (NUM_SPECIES + 0)
+-#define SPECIES_OLD_UNOWN_QMARK (NUM_SPECIES + 1)
++#define SPECIES_OLD_UNOWN_EMARK (FIRERED_RETAIL_NUM_SPECIES + 0)
++#define SPECIES_OLD_UNOWN_QMARK (FIRERED_RETAIL_NUM_SPECIES + 1)
