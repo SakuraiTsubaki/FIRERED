@@ -1,0 +1,69 @@
+From: FIRERED project
+Subject: [PATCH 11] Extend Battle Tower ability slots without changing its ABI
+
+Applies after:
+    patches/0009-wide-ability-ids.patch
+    patches/0010-boxmon-modern-metadata.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+BattleTowerPokemon has one unused bit immediately before its retail one-bit
+abilityNum field. Preserve the retail abilityNum bit in its original bit
+position and repurpose only the former gap bit as the high ability-slot bit.
+
+This is deliberately NOT written as "abilityNum:2": that would move the
+meaning of legacy bit 31 and reinterpret existing serialized values.
+
+Also remove two AI paths that manually collapse every nonzero ability slot to
+slot 1. Route them through GetAbilityBySpecies so slot 2 (hidden ability) is
+handled correctly.
+
+--- a/include/pokemon.h
++++ b/include/pokemon.h
+@@
+              u32 speedIV:5;
+              u32 spAttackIV:5;
+              u32 spDefenseIV:5;
+-             u32 gap:1;
++             u32 abilityNumHigh:1;
+              u32 abilityNum:1;
+     /*0x1C*/ u32 personality;
+
+--- a/src/pokemon.c
++++ b/src/pokemon.c
+@@
+-    value = src->abilityNum;
++    value = src->abilityNum | (src->abilityNumHigh << 1);
+     SetMonData(mon, MON_DATA_ABILITY_NUM, &value);
+@@
+-    dest->abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM, NULL);
++    {
++        u8 abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM, NULL);
++        dest->abilityNum = abilityNum & 1;
++        dest->abilityNumHigh = (abilityNum >> 1) & 1;
++    }
+     dest->personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
+
+--- a/src/battle_ai_switch_items.c
++++ b/src/battle_ai_switch_items.c
+@@
+         species = GetMonData(&gEnemyParty[i], MON_DATA_SPECIES);
+-        if (GetMonData(&gEnemyParty[i], MON_DATA_ABILITY_NUM) != ABILITY_NONE)
+-            monAbility = gSpeciesInfo[species].abilities[1];
+-        else
+-            monAbility = gSpeciesInfo[species].abilities[0];
++        monAbility = GetAbilityBySpecies(
++            species,
++            GetMonData(&gEnemyParty[i], MON_DATA_ABILITY_NUM));
+         if (absorbingTypeAbility == monAbility && Random() & 1)
+@@
+         species = GetMonData(&gEnemyParty[i], MON_DATA_SPECIES);
+-        if (GetMonData(&gEnemyParty[i], MON_DATA_ABILITY_NUM) != ABILITY_NONE)
+-            monAbility = gSpeciesInfo[species].abilities[1];
+-        else
+-            monAbility = gSpeciesInfo[species].abilities[0];
++        monAbility = GetAbilityBySpecies(
++            species,
++            GetMonData(&gEnemyParty[i], MON_DATA_ABILITY_NUM));
+         moveFlags = AI_TypeCalc(gLastLandedMoves[gActiveBattler], species, monAbility);
