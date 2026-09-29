@@ -14,7 +14,8 @@ on:
       - "patches/0011-*.patch"
       - "patches/0012-*.patch"
       - "patches/0013-*.patch"
-      - "patches/0014-*.patch"\n      - "patches/0015-*.patch"
+      - "patches/0014-*.patch"
+      - "patches/0015-*.patch"
       - "tools/audit_gen10_widths.py"
       - "tools/apply_context_patch.py"
       - ".github/workflows/gen10-expansion.yml"
@@ -62,7 +63,8 @@ jobs:
             patches/0011-auxiliary-ability-slots.patch \
             patches/0012-wide-battle-script-ability-operands.patch \
             patches/0013-decouple-retail-dex-storage.patch \
-            patches/0014-freeze-legacy-unown-ids.patch \\\n            patches/0015-wide-battle-ball-accounting.patch
+            patches/0014-freeze-legacy-unown-ids.patch \
+            patches/0015-wide-battle-ball-accounting.patch
           git -C upstream diff --check
 
       - name: Run width audit
