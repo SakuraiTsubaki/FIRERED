@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "project": "SakuraiTsubaki/FIRERED",
   "source": {
     "repository": "pret/pokefirered",
@@ -22,18 +22,19 @@
     "moves": {
       "target_bits": 16,
       "persistent_status": "retail-ready",
-      "level_up_status": "patched-pending-ci",
+      "level_up_status": "build-verified",
       "remediation": "patches/0006-wide-levelup-learnsets.patch",
       "max_logical_levelup_entries": 64
     },
     "abilities": {
       "target_bits": 16,
-      "global_status": "patched-pending-ci",
+      "global_status": "build-verified",
       "global_remediation": "patches/0009-wide-ability-ids.patch",
       "species_slots": 3,
-      "normal_boxmon_slot_status": "patched-pending-ci",
+      "normal_boxmon_slot_status": "build-verified",
       "normal_boxmon_remediation": "patches/0010-boxmon-modern-metadata.patch",
-      "auxiliary_battle_tower_slot_status": "pending"
+      "auxiliary_battle_tower_slot_status": "build-verified",
+      "battle_script_operand_status": "build-verified"
     },
     "types": {
       "target_bits": 8,
@@ -41,18 +42,23 @@
     },
     "pokeballs": {
       "normal_boxmon_bits": 6,
-      "normal_boxmon_status": "patched-pending-ci",
+      "normal_boxmon_status": "build-verified",
       "remediation": "patches/0010-boxmon-modern-metadata.patch",
-      "battle_results_status": "pending-retail-4-bit"
+      "battle_results_status": "build-verified",
+      "battle_runtime_capacity": 64,
+      "battle_runtime_patch": "patches/0015-wide-battle-ball-accounting.patch",
+      "item_mapping_status": "retail-only-pending-modern-import",
+      "bag_capacity_status": "pending"
     },
     "dex": {
       "target_species_capacity": 4096,
       "bitset_bytes_each": 512,
-      "storage_status": "patched-pending-ci",
+      "storage_status": "build-verified",
       "storage_schema": "patches/0007-gen10-save-schema.patch",
-      "accessor_status": "patched-pending-ci",
+      "accessor_status": "build-verified",
       "accessor_patch": "patches/0008-extended-dex-flags.patch",
-      "ui_mapping_status": "pending"
+      "ui_mapping_status": "pending",
+      "retail_storage_boundary_status": "build-verified"
     }
   },
   "box_pokemon": {
@@ -99,8 +105,35 @@
       "0007",
       "0008",
       "0009",
-      "0010"
+      "0010",
+      "0011",
+      "0012",
+      "0013",
+      "0014",
+      "0015"
     ],
-    "status": "pending-success"
+    "status": "build-verified",
+    "latest_verified_run": 24,
+    "expanded_rom_bytes": 33554432
+  },
+  "legacy_species_ids": {
+    "egg": 412,
+    "unown_forms": [
+      413,
+      439
+    ],
+    "expanded_species_start": 440,
+    "status": "build-verified",
+    "patch": "patches/0014-freeze-legacy-unown-ids.patch"
+  },
+  "rom_save_revalidation": {
+    "date": "2026-09-29",
+    "rom_count": 8,
+    "save_count": 8,
+    "hashes_match_manifest": true,
+    "gba_header_checksums_valid": true,
+    "flash_library": "FLASH1M_V103",
+    "save_sector_checksums_valid": true,
+    "verified_extension_tails_zero": true
   }
 }
