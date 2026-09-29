@@ -1,5 +1,5 @@
 {
-  "schema": 4,
+  "schema": 5,
   "project": "SakuraiTsubaki/FIRERED",
   "priority": "retail-rom-save-expansion-before-form-change",
   "form_change_status": "deferred",
@@ -38,7 +38,9 @@
     ],
     "mirrors_are_additional_capacity": false,
     "above_32_mib_policy": "separate-nonstandard-profile-only",
-    "allocation_policy": "linker-controlled; do not treat arbitrary retail 0xFF runs as canonical allocator space"
+    "allocation_policy": "linker-controlled; do not treat arbitrary retail 0xFF runs as canonical allocator space",
+    "expanded_build_status": "build-verified",
+    "expanded_build_bytes": 33554432
   },
   "save": {
     "total_size": 131072,
@@ -83,7 +85,8 @@
       "species_capacity": 4096,
       "seen_bytes": 512,
       "caught_bytes": 512
-    }
+    },
+    "legacy_extension_bytes_revalidated_zero_on": "2026-09-29"
   },
   "box_pokemon_extension": {
     "retail_size_bytes": 80,
@@ -97,5 +100,21 @@
       "reserved_stat_flags": "bits 10..15"
     },
     "checksum_covered": false
+  },
+  "pokeballs": {
+    "box_pokemon_bits": 6,
+    "box_pokemon_capacity": 64,
+    "battle_runtime_capacity": 64,
+    "battle_runtime_status": "build-verified",
+    "mapping_policy": "ItemIdToBallId",
+    "modern_item_mapping_status": "pending-data-import",
+    "bag_capacity_status": "pending"
+  },
+  "species_expansion": {
+    "retail_egg_id": 412,
+    "legacy_unown_form_id_start": 413,
+    "legacy_unown_form_id_end": 439,
+    "expanded_regular_species_start": 440,
+    "status": "build-verified"
   }
 }
