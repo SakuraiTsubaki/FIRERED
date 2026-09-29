@@ -1,0 +1,89 @@
+From: FIRERED project
+Subject: [PATCH 15] Expand battle Poké Ball accounting to 64 ball IDs
+
+Applies after:
+    patches/0010-boxmon-modern-metadata.patch
+
+Reference target: pret/pokefirered
+Reference snapshot: c75f352304d529f6ba92d4f74b9cf8b5c3810788
+
+BoxPokemon can store a six-bit Poké Ball ID after patch 0010, but the runtime
+battle results still assume the retail ball set in two separate ways:
+
+- caughtMonBall is only four bits;
+- catchAttempts has 11 entries and is indexed by
+  gLastUsedItem - ITEM_ULTRA_BALL.
+
+The subtraction only works because the retail catchable ball item IDs are a
+small contiguous block. It is not a valid long-term ABI for later-generation
+ball items.
+
+Keep the legacy four-bit field in place for layout provenance, but make a new
+byte in the existing filler area the authoritative caught-ball runtime ID.
+Grow the runtime-only catch-attempt table to the same 64-ID ceiling used by
+BoxPokemon. Use ItemIdToBallId() as the single item -> ball namespace bridge.
+
+BattleResults is transient EWRAM state, not part of the retail save format, so
+growing catchAttempts does not change save compatibility.
+
+--- a/include/battle.h
++++ b/include/battle.h
+@@
+ extern struct BattleResources *gBattleResources;
+ 
++#define FIRERED_POKEBALL_CAPACITY 64
++
+ struct BattleResults
+ {
+@@
+     u16 playerMon2Species;    // 0x26
+     u16 caughtMonSpecies;     // 0x28
+     u8 caughtMonNick[10];     // 0x2A
+-    u8 filler34[2];
+-    u8 catchAttempts[11];     // 0x36
++    u8 caughtMonBallId;       // Expanded runtime ball namespace, 0..63
++    u8 filler35;
++    u8 catchAttempts[FIRERED_POKEBALL_CAPACITY];
+ };
+
+--- a/src/battle_main.c
++++ b/src/battle_main.c
+@@
+-    for (i = 0; i < 11; i++)
++    for (i = 0; i < FIRERED_POKEBALL_CAPACITY; i++)
+         gBattleResults.catchAttempts[i] = 0;
+@@
+     gBattleResults.playerMon2Species = SPECIES_NONE;
+     gBattleResults.caughtMonSpecies = SPECIES_NONE;
++    gBattleResults.caughtMonBallId = 0;
+     for (i = 0; i < POKEMON_NAME_LENGTH; ++i)
+
+--- a/src/battle_script_commands.c
++++ b/src/battle_script_commands.c
+@@
+     else
+     {
+         u32 odds;
+         u8 catchRate;
++        u8 ballId = ItemIdToBallId(gLastUsedItem);
+@@
+             else
+             {
+-                if (gBattleResults.catchAttempts[gLastUsedItem - ITEM_ULTRA_BALL] < 255)
+-                    gBattleResults.catchAttempts[gLastUsedItem - ITEM_ULTRA_BALL]++;
++                if (ballId < FIRERED_POKEBALL_CAPACITY
++                 && gBattleResults.catchAttempts[ballId] < 255)
++                    gBattleResults.catchAttempts[ballId]++;
+             }
+         }
+@@
+             MarkBattlerForControllerExec(gActiveBattler);
+             gBattlescriptCurrInstr = BattleScript_SuccessBallThrow;
+             SetMonData(&gEnemyParty[gBattlerPartyIndexes[gBattlerTarget]], MON_DATA_POKEBALL, &gLastUsedItem);
++            gBattleResults.caughtMonBallId = ballId;
+@@
+             if (shakes == BALL_3_SHAKES_SUCCESS) // mon caught, copy of the code above
+             {
+                 gBattlescriptCurrInstr = BattleScript_SuccessBallThrow;
+                 SetMonData(&gEnemyParty[gBattlerPartyIndexes[gBattlerTarget]], MON_DATA_POKEBALL, &gLastUsedItem);
++                gBattleResults.caughtMonBallId = ballId;
